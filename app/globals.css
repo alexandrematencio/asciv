@@ -1,26 +1,473 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    /* Avoid using @apply with gradient color-stop utilities (they set CSS vars
+       and can fail during build). Use an explicit linear-gradient instead. */
+    background-image: linear-gradient(to bottom right, #f8fafc, #eff6ff, #eef2ff);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Modern Card Styles */
+  .card {
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02];
+  }
+
+  /* Input Styles */
+  .input-primary {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+           text-gray-900 placeholder:text-gray-400
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+           transition-all duration-200;
+  }
+
+  .textarea-primary {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+           text-gray-900 placeholder:text-gray-400 resize-none
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+           transition-all duration-200;
+  }
+
+  /* Select Styles */
+  .select-primary {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+           text-gray-900 bg-white
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+           transition-all duration-200;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  /* Status Badges */
+  .badge-draft {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  .badge-sent {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .badge-waiting {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .badge-interview {
+    @apply bg-purple-100 text-purple-700;
+  }
+
+  .badge-offer {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .badge-rejected {
+    @apply bg-red-100 text-red-700;
+  }
+}
+
+@layer utilities {
+  /* Toast slide in animation */
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Modal scale animation */
+  @keyframes scale-in {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Fade in animation */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Spin animation */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Pulse animation */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Bounce animation */
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 1s ease-in-out infinite;
+  }
+
+  /* Hover utilities */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+
+  .hover\:scale-105:hover {
+    transform: scale(1.05);
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    /* Use explicit gradient instead of applying `from-`/`to-` utilities */
+    background-image: linear-gradient(to right, #2563eb, #4f46e5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Border utilities */
+  .border-gradient {
+    border-image: linear-gradient(to right, #3b82f6, #6366f1) 1;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Button States - Complete System */
+button {
+  @apply transition-all duration-200 ease-out;
+}
+
+/* Primary Button States */
+.btn-primary {
+  @apply bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl;
+  @apply shadow-md;
+}
+
+/* Enabled (default) */
+.btn-primary:not(:disabled) {
+  @apply cursor-pointer;
+}
+
+/* Hover */
+.btn-primary:not(:disabled):hover {
+  @apply bg-blue-700 shadow-lg;
+  transform: translateY(-1px);
+}
+
+/* Focus */
+.btn-primary:not(:disabled):focus {
+  @apply outline-none ring-4 ring-blue-200;
+}
+
+/* Active/Pressed */
+.btn-primary:not(:disabled):active {
+  @apply bg-blue-800 shadow-sm;
+  transform: translateY(0);
+}
+
+/* Disabled */
+.btn-primary:disabled {
+  @apply bg-gray-300 text-gray-500 cursor-not-allowed opacity-60;
+  @apply shadow-none;
+}
+
+/* Secondary Button States */
+.btn-secondary {
+  @apply bg-gray-100 text-gray-700 font-semibold px-6 py-3 rounded-xl;
+  @apply border-2 border-gray-200;
+}
+
+.btn-secondary:not(:disabled):hover {
+  @apply bg-gray-200 border-gray-300;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:not(:disabled):focus {
+  @apply outline-none ring-4 ring-gray-200;
+}
+
+.btn-secondary:not(:disabled):active {
+  @apply bg-gray-300;
+  transform: translateY(0);
+}
+
+.btn-secondary:disabled {
+  @apply bg-gray-50 text-gray-400 cursor-not-allowed opacity-60;
+}
+
+/* Success Button States */
+.btn-success {
+  @apply bg-green-600 text-white font-semibold px-6 py-3 rounded-xl;
+  @apply shadow-md;
+}
+
+.btn-success:not(:disabled):hover {
+  @apply bg-green-700 shadow-lg;
+  transform: translateY(-1px);
+}
+
+.btn-success:not(:disabled):focus {
+  @apply outline-none ring-4 ring-green-200;
+}
+
+.btn-success:not(:disabled):active {
+  @apply bg-green-800;
+  transform: translateY(0);
+}
+
+/* Danger Button States */
+.btn-danger {
+  @apply bg-red-600 text-white font-semibold px-6 py-3 rounded-xl;
+  @apply shadow-md;
+}
+
+.btn-danger:not(:disabled):hover {
+  @apply bg-red-700 shadow-lg;
+  transform: translateY(-1px);
+}
+
+.btn-danger:not(:disabled):focus {
+  @apply outline-none ring-4 ring-red-200;
+}
+
+.btn-danger:not(:disabled):active {
+  @apply bg-red-800;
+  transform: translateY(0);
+}
+
+/* Small Button Size */
+.btn-sm {
+  @apply px-4 py-2 text-sm rounded-lg;
+}
+
+/* Large Button Size */
+.btn-lg {
+  @apply px-8 py-4 text-lg rounded-xl;
+}
+
+/* Icon Button */
+.btn-icon {
+  @apply w-10 h-10 rounded-full flex items-center justify-center;
+  @apply transition-all duration-200;
+}
+
+.btn-icon:hover {
+  @apply bg-gray-100 scale-110;
+}
+
+/* Loading Button */
+.btn-loading {
+  @apply relative;
+}
+
+.btn-loading::after {
+  content: '';
+  @apply absolute inset-0 flex items-center justify-center;
+  @apply bg-inherit rounded-xl;
+}
+
+/* Form Focus Ring */
+input:focus,
+textarea:focus,
+select:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Card hover effects */
+.card-interactive {
+  @apply cursor-pointer transition-all duration-300;
+  @apply hover:shadow-xl hover:-translate-y-1;
+}
+
+.card-interactive:active {
+  @apply translate-y-0 shadow-lg;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm;
+  @apply transition-opacity duration-300;
+}
+
+/* Stat Card */
+.stat-card {
+  @apply bg-white rounded-2xl shadow-md p-6;
+  @apply border-l-4 transition-all duration-300;
+  @apply hover:shadow-lg hover:scale-[1.02];
+}
+
+/* Progress Bar */
+.progress-bar {
+  @apply w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-image: linear-gradient(to right, #3b82f6, #4f46e5);
+  transition: all 500ms ease-out;
+}
+
+/* Tooltip */
+.tooltip {
+  @apply absolute invisible opacity-0 transition-all duration-200;
+  @apply bg-gray-900 text-white text-xs rounded-lg px-3 py-2;
+  @apply -top-2 left-1/2 transform -translate-x-1/2 -translate-y-full;
+}
+
+.tooltip-trigger:hover .tooltip {
+  @apply visible opacity-100;
+}
+
+/* Empty State */
+.empty-state {
+  @apply flex flex-col items-center justify-center py-16 text-center;
+}
+
+.empty-state-icon {
+  @apply text-8xl mb-6 animate-bounce;
+}
+
+/* Filter Pills */
+.filter-pill {
+  @apply px-4 py-2 rounded-full font-medium transition-all duration-200;
+  @apply cursor-pointer;
+}
+
+.filter-pill:not(.active) {
+  @apply bg-white text-gray-700 hover:bg-gray-50 shadow-sm;
+}
+
+.filter-pill.active {
+  background-image: linear-gradient(to right, #2563eb, #4f46e5);
+  color: #fff;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Timeline */
+.timeline-item {
+  @apply relative pl-8 pb-8 border-l-2 border-gray-200;
+}
+
+.timeline-item:last-child {
+  @apply pb-0;
+}
+
+.timeline-dot {
+  @apply absolute left-0 top-0 w-4 h-4 rounded-full bg-blue-500;
+  @apply -translate-x-[calc(50%+1px)];
+  @apply ring-4 ring-white;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full;
+  animation: spin 1s linear infinite;
+}
+
+/* Success Checkmark */
+@keyframes checkmark {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.checkmark {
+  animation: checkmark 0.5s ease-out forwards;
 }

@@ -1,0 +1,94 @@
+/* Minimal project-specific CSS translated from globals.css
+   Avoid using Tailwind's @apply here — use plain CSS so build won't need
+   to run Tailwind at build-time. The bulk of utility classes come from the
+   Tailwind CDN loaded at runtime. */
+
+:root {
+  --geist-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--geist-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Body gradient (approx of from-slate-50 via-blue-50 to-indigo-50) */
+body {
+  background-image: linear-gradient(to bottom right, #f8fafc, #eff6ff, #eef2ff);
+}
+
+/* Card */
+.card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(2,6,23,0.08);
+  border: 1px solid #f1f5f9;
+}
+
+.card-hover {
+  transition: all 0.3s ease;
+}
+.card-hover:hover { box-shadow: 0 20px 40px rgba(2,6,23,0.12); transform: scale(1.02); }
+
+/* Buttons */
+.btn-primary {
+  background-color: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.12);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+.btn-primary:disabled { background-color: #e5e7eb; color:#9ca3af; cursor:not-allowed; opacity:0.6; }
+
+.btn-secondary {
+  background-color: #f3f4f6; color:#374151; font-weight:600; padding:0.75rem 1.5rem; border-radius:0.75rem; border:2px solid #e5e7eb;
+}
+
+.btn-success { background-color:#16a34a; color:#fff; font-weight:600; padding:0.75rem 1.5rem; border-radius:0.75rem; }
+.btn-danger { background-color:#dc2626; color:#fff; font-weight:600; padding:0.75rem 1.5rem; border-radius:0.75rem; }
+
+/* Inputs */
+.input-primary, .textarea-primary, .select-primary {
+  width:100%; padding:0.75rem 1rem; border-radius:0.75rem; border:2px solid #e5e7eb; color:#111827; background-color:#fff;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.input-primary:focus, .textarea-primary:focus, .select-primary:focus { outline:none; box-shadow:0 0 0 6px rgba(59,130,246,0.12); border-color:#3b82f6; }
+
+/* Badge */
+.badge { display:inline-flex; align-items:center; padding:0.25rem 0.75rem; border-radius:9999px; font-size:0.75rem; font-weight:600; }
+.badge-draft { background:#f3f4f6; color:#374151; }
+.badge-sent { background:#dbeafe; color:#1e3a8a; }
+.badge-waiting { background:#fef3c7; color:#92400e; }
+.badge-interview { background:#ede9fe; color:#5b21b6; }
+.badge-offer { background:#ecfccb; color:#166534; }
+.badge-rejected { background:#fee2e2; color:#991b1b; }
+
+/* Utilities used in components */
+.glass { background-color: rgba(255,255,255,0.8); backdrop-filter: blur(10px); }
+.gradient-text { background-image: linear-gradient(to right, #2563eb, #4f46e5); -webkit-background-clip: text; background-clip:text; color:transparent; }
+
+.modal-backdrop { position:fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); }
+
+.stat-card { background:#fff; border-radius:1rem; box-shadow:0 8px 30px rgba(2,6,23,0.08); padding:1.5rem; border-left:4px solid rgba(59,130,246,0.2); transition:all .25s ease; }
+
+.progress-bar { width:100%; background:#e5e7eb; border-radius:9999px; height:0.5rem; overflow:hidden; }
+.progress-bar-fill { height:100%; background-image:linear-gradient(to right,#3b82f6,#4f46e5); transition:width 0.5s ease-out; }
+
+.tooltip { position:absolute; visibility:hidden; opacity:0; transition:all .2s ease; background:#111827; color:#fff; font-size:0.75rem; padding:0.5rem 0.75rem; border-radius:0.5rem; }
+.tooltip-trigger:hover .tooltip { visibility:visible; opacity:1; }
+
+/* Simple scrollbars */
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-track { background:#f1f5f9; border-radius:10px; }
+::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+
+/* Fallbacks for other small utilities */
+.card-interactive { cursor:pointer; transition:all .3s ease; }
+.card-interactive:hover { box-shadow:0 20px 40px rgba(2,6,23,0.12); transform:translateY(-6px); }
+
+/* Keep styles small; majority of utility classes come from Tailwind CDN */
