@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, User, LogOut, ChevronDown, Edit2, Send, Calendar, Star, Ban, Trash2, FileText, Target, Clock, TrendingUp, Briefcase, Copy, CalendarPlus } from 'lucide-react';
 import Button from '@/app/components/Button';
 import { ToastContainer } from '@/app/components/Toast';
 import NewApplicationModal from '@/app/components/NewApplicationModal';
 import CVDetailModal from '@/app/components/CVDetailModal';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useProfile } from '@/app/contexts/ProfileContext';
 import {
   Template,
   Application,
@@ -15,59 +20,112 @@ import {
   SentVia,
   InterviewInfo,
 } from '@/app/types';
+import {
+  loadApplications,
+  loadTemplates,
+  saveAllApplications,
+  saveAllTemplates,
+  deleteApplication as deleteAppFromDb,
+  deleteCVVersion,
+  deleteCoverLetter as deleteCoverLetterFromDb,
+  migrateFromLocalStorage,
+} from '@/lib/supabase-db';
 
 export default function JobHunterPro() {
+  const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, isComplete: profileComplete } = useProfile();
   const [applications, setApplications] = useState<Application[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [toasts, setToasts] = useState<ToastType[]>([]);
-  
+
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [filterStatus, setFilterStatus] = useState<ApplicationStatus | 'all'>('all');
   
   const [generatingCV, setGeneratingCV] = useState(false);
-  
+  const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false);
+
   // Interview modal
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [interviewAppId, setInterviewAppId] = useState<string | null>(null);
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
   const [interviewLocation, setInterviewLocation] = useState('');
+  const [isEditingInterview, setIsEditingInterview] = useState(false);
+
+  // Interview details dropdown
+  const [expandedInterviewId, setExpandedInterviewId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Pre-fill interview modal when opening
+  useEffect(() => {
+    if (showInterviewModal && interviewAppId) {
+      const app = applications.find(a => a.id === interviewAppId);
+      if (app?.tracking.interviewScheduled) {
+        const interview = app.tracking.interviewScheduled;
+        setInterviewDate(new Date(interview.date).toISOString().split('T')[0]);
+        setInterviewTime(new Date(interview.date).toTimeString().slice(0, 5));
+        setInterviewLocation(interview.location || '');
+      } else {
+        // Reset form for new interview
+        setInterviewDate('');
+        setInterviewTime('');
+        setInterviewLocation('');
+      }
+    }
+  }, [showInterviewModal, interviewAppId, applications]);
+
+  const loadData = async () => {
     try {
-      const savedApps = localStorage.getItem('job-applications-v2');
-      const savedTemplates = localStorage.getItem('job-templates-v2');
-      
-      if (savedApps) {
-        setApplications(JSON.parse(savedApps));
-      }
-      if (savedTemplates) {
-        setTemplates(JSON.parse(savedTemplates));
-      }
+      // First, try to migrate from localStorage if needed
+      await migrateFromLocalStorage();
+
+      // Load from Supabase
+      const [apps, temps] = await Promise.all([
+        loadApplications(),
+        loadTemplates(),
+      ]);
+
+      setApplications(apps);
+      setTemplates(temps);
     } catch (error) {
       console.error('Failed to load data:', error);
     }
   };
 
-  const saveApplications = (apps: Application[]) => {
+  const saveApplications = async (apps: Application[]) => {
     try {
-      localStorage.setItem('job-applications-v2', JSON.stringify(apps));
       setApplications(apps);
+      // Save to Supabase in background
+      await saveAllApplications(apps);
     } catch (error) {
       console.error('Failed to save:', error);
       addToast('error', 'Failed to save');
     }
   };
 
-  const saveTemplates = (temps: Template[]) => {
+  const saveTemplates = async (temps: Template[]) => {
     try {
-      localStorage.setItem('job-templates-v2', JSON.stringify(temps));
       setTemplates(temps);
+      // Save to Supabase in background
+      await saveAllTemplates(temps);
     } catch (error) {
       console.error('Failed to save templates:', error);
     }
@@ -90,18 +148,26 @@ export default function JobHunterPro() {
     jobDescription: string,
     cvData: any
   ): Promise<string> => {
-    const prompt = `Create a professional, tailored resume for this job application:
+    // Parse name into firstName/lastName
+    const nameParts = cvData.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
 
-PERSONAL INFORMATION:
+    const prompt = `You are an expert resume writer with 15+ years of experience. Create a professional, ATS-optimized resume tailored for this job.
+
+CANDIDATE INFORMATION:
 Name: ${cvData.name}
 Email: ${cvData.email}
 Phone: ${cvData.phone}
-Address: ${cvData.address}
+Location: ${cvData.address}
+${cvData.age ? `Age: ${cvData.age}` : ''}
+${cvData.languages ? `Languages: ${cvData.languages}` : ''}
+${cvData.portfolio ? `Portfolio: ${cvData.portfolio}` : ''}
 
 PROFESSIONAL SUMMARY:
-${cvData.summary || 'Create a compelling professional summary based on the experience and job description'}
+${cvData.summary || 'Create a compelling 3-4 sentence professional summary'}
 
-EXPERIENCE:
+WORK EXPERIENCE:
 ${cvData.experience}
 
 SKILLS:
@@ -110,10 +176,175 @@ ${cvData.skills}
 EDUCATION:
 ${cvData.education}
 
-JOB DESCRIPTION TO TAILOR FOR:
+${cvData.projects ? `KEY PROJECTS:\n${cvData.projects}` : ''}
+
+TARGET JOB DESCRIPTION:
 ${jobDescription}
 
-INSTRUCTIONS: Create a well-formatted, professional resume that is specifically tailored to this job. Highlight relevant experience and skills that match the job requirements. Use strong action verbs and quantify achievements where possible. Format it professionally with clear sections.`;
+CRITICAL INSTRUCTIONS:
+You MUST respond with ONLY valid JSON matching this exact structure (no markdown, no code blocks, just raw JSON):
+
+{
+  "personalInfo": {
+    "name": "${cvData.name}",
+    "firstName": "${firstName}",
+    "lastName": "${lastName}",
+    "age": ${cvData.age || 'null'},
+    "languages": ${cvData.languages ? `"${cvData.languages}"` : 'null'},
+    "address": "${cvData.address}",
+    "email": "${cvData.email}",
+    "phone": "${cvData.phone}",
+    "portfolio": ${cvData.portfolio ? `"${cvData.portfolio}"` : 'null'},
+    "photo": null
+  },
+  "profile": {
+    "text": "3-4 sentences tailored professional summary highlighting most relevant experience for THIS role",
+    "availability": "Disponible immédiatement" or similar
+  },
+  "skills": {
+    "technical": ["Skill1", "Skill2", "Skill3"],
+    "marketing": ["Skill1", "Skill2"],
+    "soft": []
+  },
+  "experiences": [
+    {
+      "id": "1",
+      "company": "COMPANY NAME",
+      "jobTitle": "Job Title",
+      "period": "Mon YYYY - Mon YYYY",
+      "industry": "Industry/sector",
+      "achievements": [
+        "Achievement 1 with metrics • Key result",
+        "Achievement 2 with numbers • Impact delivered"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "1",
+      "name": "Project Name",
+      "description": "Brief description with impact metrics"
+    }
+  ],
+  "education": [
+    {
+      "id": "1",
+      "institution": "INSTITUTION NAME",
+      "years": "YYYY - YYYY",
+      "degree": "Degree Name",
+      "specialization": "Field of study"
+    }
+  ]
+}
+
+REQUIREMENTS:
+- Extract 4-6 experiences from work history (reverse chronological)
+- 2 achievement bullets per experience (focused, metrics-driven)
+- Skills: categorize into technical/marketing/soft based on candidate's background
+- Projects: extract 2-3 key projects if mentioned, otherwise create based on impressive work achievements
+- Education: extract all degrees mentioned
+- IMPORTANT: Return ONLY the JSON object, no other text, no markdown formatting`;
+
+    try {
+      const response = await fetch('/api/generate-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      // The API returns { resume: "..." }, extract and parse JSON
+      const cvJson = data.resume;
+
+      // Clean up response if it contains markdown code blocks
+      let cleanedJson = cvJson.trim();
+      if (cleanedJson.startsWith('```json')) {
+        cleanedJson = cleanedJson.replace(/^```json\n/, '').replace(/\n```$/, '');
+      } else if (cleanedJson.startsWith('```')) {
+        cleanedJson = cleanedJson.replace(/^```\n/, '').replace(/\n```$/, '');
+      }
+
+      // Validate it's valid JSON
+      JSON.parse(cleanedJson);
+
+      return cleanedJson;
+    } catch (error) {
+      console.error('CV generation failed:', error);
+      throw error;
+    }
+  };
+
+  const generateCVFromTemplate = async (
+    jobDescription: string,
+    template: Template,
+    company: string,
+    role: string
+  ): Promise<string> => {
+    const prompt = `You are an expert resume writer specializing in job application optimization. Create a highly targeted, ATS-friendly resume for this specific job opportunity.
+
+TARGET POSITION:
+Company: ${company}
+Role: ${role}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CANDIDATE PROFILE (use as foundation):
+Name: ${template.content.personalInfo.name}
+Email: ${template.content.personalInfo.email}
+Phone: ${template.content.personalInfo.phone}
+Location: ${template.content.personalInfo.address}
+
+Professional Summary:
+${template.content.summary}
+
+Work Experience:
+${template.content.experience}
+
+Education:
+${template.content.education}
+
+Skills:
+${template.content.skills}
+
+CRITICAL INSTRUCTIONS:
+1. STRUCTURE: Use markdown headers (##) for main sections: Professional Summary, Work Experience, Education, Skills
+2. PROFESSIONAL SUMMARY:
+   - Rewrite the summary to align perfectly with the target role at ${company}
+   - Keep it to 3-4 impactful sentences
+   - Mirror language from the job description while remaining authentic
+3. WORK EXPERIENCE:
+   - Maintain chronological order and factual accuracy from template
+   - Format: **Job Title** at **Company Name** | *Start Date - End Date*
+   - Reframe bullet points to emphasize skills/experience matching the job description
+   - Use strong action verbs: Spearheaded, Architected, Delivered, Transformed, Orchestrated, Drove
+   - Add metrics and quantifiable results wherever possible (%, $, numbers, time)
+   - Prioritize most relevant achievements for THIS role
+   - 3-5 bullets per position, focusing on transferable skills
+4. SKILLS SECTION:
+   - Extract and prioritize skills from template that match job requirements
+   - Add any missing skills from job description that candidate likely possesses based on experience
+   - Format as comma-separated list (NOT bullets)
+   - Group by category if helpful (e.g., "Technical Skills:", "Languages:", "Tools:")
+5. EDUCATION: Keep factual, include degree, field, institution, year
+6. KEYWORDS: Naturally integrate 10-15 keywords from job description throughout the resume
+7. TONE: Confident, results-driven, professional - show expertise without arrogance
+8. ATS OPTIMIZATION:
+   - Use standard section names
+   - Avoid graphics, tables, or complex formatting
+   - Use industry-standard job titles when possible
+9. DO NOT:
+   - Fabricate experience or skills not in the template
+   - Use first-person pronouns (I, me, my)
+   - Include irrelevant sections (hobbies, references, headshot)
+   - Create "Projects" section unless genuinely relevant to the role
+10. LENGTH: Aim for 1 page equivalent (400-500 words) - be concise and impactful
+
+OUTPUT: Clean, professional resume in markdown format that will pass ATS screening and impress human recruiters.`;
 
     try {
       const response = await fetch('/api/generate-resume', {
@@ -134,35 +365,188 @@ INSTRUCTIONS: Create a well-formatted, professional resume that is specifically 
     }
   };
 
-  const generateCVFromTemplate = async (
-    jobDescription: string,
-    template: Template,
-    company: string,
-    role: string
+  const generateCoverLetter = async (
+    application: Application,
+    style: import('./types').CoverLetterStyle,
+    recipientInfo: import('./types').RecipientInfo,
+    availabilityDate?: string
   ): Promise<string> => {
-    const prompt = `Create a professional resume tailored for this job:
+    const cvContent = application.cvVersions[0].content; // Use main CV
 
-COMPANY: ${company}
-ROLE: ${role}
+    // System context - Expert persona with strict quality requirements
+    const systemContext = `Tu es l'un des meilleurs experts RH au monde avec 40 ans d'expérience dans le recrutement et le développement de carrière. Tu as aidé des milliers de candidats à décrocher des postes dans les entreprises les plus prestigieuses (Google, Apple, McKinsey, LVMH, etc.).
 
-JOB DESCRIPTION:
-${jobDescription}
+TON RÔLE: Créer des lettres de motivation d'une qualité EXCEPTIONNELLE, personnalisées et impactantes - jamais génériques, jamais superficielles, jamais exagérées.
 
-CANDIDATE TEMPLATE (use as base):
-Name: ${template.content.personalInfo.name}
-Email: ${template.content.personalInfo.email}
-Phone: ${template.content.personalInfo.phone}
-Address: ${template.content.personalInfo.address}
+INTERDICTIONS ABSOLUES - RESPECT STRICT EXIGÉ:
+❌ NE JAMAIS inclure d'adresse postale (ni "139 Blvd...", ni "Rue...", AUCUNE adresse)
+❌ NE JAMAIS inclure de numéro de téléphone (ni "06...", ni "+33...", AUCUN numéro)
+❌ NE JAMAIS inclure de portfolio/website (ni "www.", ni "instagram", ni "http", RIEN)
+❌ NE JAMAIS inclure de date (ni "Le 15 janvier", ni "19/01/2026", AUCUNE date)
+❌ NE JAMAIS inventer d'expériences ou compétences absentes du CV
+❌ NE JAMAIS utiliser de formulations vagues ou génériques ("dynamique", "motivé" sans preuve concrète)
+❌ NE JAMAIS exagérer - rester authentique et crédible
 
-Summary: ${template.content.summary}
-Experience: ${template.content.experience}
-Education: ${template.content.education}
-Skills: ${template.content.skills}
+FORMAT DE SORTIE OBLIGATOIRE - AUCUNE DÉVIATION ACCEPTÉE:
+Tu génères EXACTEMENT et UNIQUEMENT ce format (pas une ligne de plus, pas une ligne de moins):
 
-Create a tailored, professional resume that highlights relevant skills and experience for this specific role. Use strong action verbs and quantify achievements where possible. Format it professionally with clear sections.`;
+[Ligne 1] NOM COMPLET du candidat (extrait du CV)
+[Ligne 2] Email du candidat
+[Ligne 3] LIGNE VIDE
+[Ligne 4] Objet: [titre précis et professionnel]
+[Ligne 5] LIGNE VIDE
+[Ligne 6] Formule d'appel
+[Ligne 7] LIGNE VIDE
+[Lignes 8+] Corps de la lettre (paragraphes bien structurés)
+[Ligne N] LIGNE VIDE
+[Ligne N+1] Formule de politesse
+[Ligne N+2] LIGNE VIDE
+[Ligne N+3] Nom complet du candidat (signature)
+
+VÉRIFICATION FINALE AVANT SOUMISSION:
+- ✋ STOP: As-tu inclus une adresse postale? SI OUI → SUPPRIME-LA IMMÉDIATEMENT
+- ✋ STOP: As-tu inclus un numéro de téléphone? SI OUI → SUPPRIME-LE IMMÉDIATEMENT
+- ✋ STOP: As-tu inclus un portfolio/site web? SI OUI → SUPPRIME-LE IMMÉDIATEMENT
+- ✋ STOP: As-tu inclus une date dans l'en-tête? SI OUI → SUPPRIME-LA IMMÉDIATEMENT
+- ✋ STOP: L'en-tête contient-il UNIQUEMENT nom + email? SI NON → CORRIGE IMMÉDIATEMENT
+
+PROCESSUS DE GÉNÉRATION AVEC AUTO-CRITIQUE:
+Avant de soumettre ta lettre, tu DOIS:
+1. ✓ Vérifier que TOUTES les informations proviennent du CV fourni (zéro invention)
+2. ✓ T'assurer que la qualité est EXCEPTIONNELLE (pas juste "bonne" - vise l'excellence)
+3. ✓ Confirmer que le ton est approprié, authentique et professionnel
+4. ✓ Vérifier que les réalisations sont concrètes avec impact mesurable (chiffres, résultats)
+5. ✓ Éliminer tout langage générique, cliché ou vide de sens
+6. ✓ Vérifier qu'aucune adresse ou date n'a été inventée
+7. ✓ Si quelque chose ne respecte pas ces critères: AMÉLIORE immédiatement avant de soumettre
+
+RAPPEL CRITIQUE: L'utilisateur compte sur toi pour créer une lettre qui le démarquera vraiment. Ne le déçois pas avec du contenu générique ou approximatif.`;
+
+    // Style-specific prompts
+    const stylePrompts = {
+      french_formal: `${systemContext}
+
+STYLE DEMANDÉ: Français traditionnel - très formel, respectueux des codes RH français
+
+STRUCTURE OBLIGATOIRE:
+- En-tête minimal: Nom + Email uniquement
+- Objet: Candidature au poste de ${application.role}
+- Formule d'appel: "Madame, Monsieur," ou "${recipientInfo.recipientName ? `${recipientInfo.recipientTitle || 'Madame/Monsieur'} ${recipientInfo.recipientName},` : 'Madame, Monsieur,'}"
+- 3 paragraphes structurés avec impact réel
+- Formule de politesse française complète: "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées."
+- Signature: Nom complet uniquement
+
+CONTENU (qualité exceptionnelle requise):
+§1 - Présentation ciblée: Pourquoi ce poste précis chez ${recipientInfo.companyName} (avec recherche réelle sur l'entreprise)
+§2 - Preuves de valeur: 2-3 réalisations concrètes du CV avec résultats mesurables
+§3 - Disponibilité et proposition d'échange professionnel
+
+TONALITÉ: Sobre, respectueuse, professionnelle, mais avec substance - éviter le vide marketing`,
+
+      french_modern: `${systemContext}
+
+STYLE DEMANDÉ: Français moderne - professionnel, dynamique, authentique
+
+STRUCTURE:
+- En-tête minimal: Nom + Email uniquement
+- Objet: Candidature au poste de ${application.role}
+- Formule d'appel: "${recipientInfo.recipientName ? `Bonjour ${recipientInfo.recipientName},` : 'Bonjour,'}"
+- 3-4 paragraphes courts et impactants
+- Formule de politesse moderne: "Cordialement," ou "Dans l'attente de vous rencontrer, cordialement,"
+- Signature: Nom complet uniquement
+
+CONTENU (qualité exceptionnelle requise):
+§1 - Accroche impactante: Pourquoi ce poste chez ${recipientInfo.companyName} (spécifique, pas générique)
+§2 - Valeur ajoutée concrète: 2-3 réalisations CHIFFRÉES du CV avec impact mesurable
+§3 - Adéquation culturelle authentique (basée sur recherche réelle de l'entreprise)
+§4 (optionnel) - Call-to-action professionnel et engageant
+
+TONALITÉ: Dynamique, authentique, orientée résultats, personnalité tout en restant professionnel`,
+
+      american_standard: `${systemContext}
+
+STYLE REQUESTED: Professional American business correspondence
+
+STRUCTURE:
+- Minimal header: Name + Email only
+- Subject line: Application for ${application.role} position
+- Salutation: "${recipientInfo.recipientName ? `Dear ${recipientInfo.recipientTitle || 'Hiring Manager'} ${recipientInfo.recipientName}` : 'Dear Hiring Manager'},"
+- 3-4 concise, impactful paragraphs
+- Closing: "Sincerely," or "Best regards,"
+- Signature: Full name only
+
+CONTENT (exceptional quality required):
+§1 - Strong opening: Specific enthusiasm for the ${application.role} position at ${recipientInfo.companyName} (not generic)
+§2 - Proven value: 2-3 specific achievements from resume with MEASURABLE metrics
+§3 - Cultural alignment: Authentic connection to ${recipientInfo.companyName}'s mission (based on real research)
+§4 - Professional call to action: Express genuine interest in contributing
+
+TONE: Confident, results-oriented, enthusiastic yet professional, focus on value delivery to the company`,
+
+      american_creative: `${systemContext}
+
+STYLE REQUESTED: Creative American - bold yet professional, personality-driven
+
+STRUCTURE:
+- Modern minimal header: Name + Email only
+- Engaging salutation: "${recipientInfo.recipientName ? `Hi ${recipientInfo.recipientName}` : 'Hi there'}," or "Dear ${recipientInfo.companyName} team,"
+- 3-4 short, punchy paragraphs with impact
+- Creative yet professional closing: "Excited to connect," "Looking forward to creating together," or similar
+- Signature: Full name only
+
+CONTENT (exceptional quality required):
+§1 - Compelling hook: Start with authentic story, insight, or statement about ${recipientInfo.companyName} (no fluff)
+§2 - Unique differentiation: What makes candidate stand out + 1-2 standout achievements with measurable impact
+§3 - Genuine passion: Real connection to ${recipientInfo.companyName}'s mission/product (backed by research)
+§4 - Forward-thinking CTA: Invite meaningful conversation about future possibilities
+
+TONE: Authentic, energetic, conversational yet professional, confident use of "I", avoid corporate clichés and jargon`
+    };
+
+    const prompt = `${stylePrompts[style]}
+
+INFORMATIONS DESTINATAIRE:
+Entreprise: ${recipientInfo.companyName}
+${recipientInfo.recipientName ? `Destinataire: ${recipientInfo.recipientTitle || ''} ${recipientInfo.recipientName}` : ''}
+
+POSTE VISÉ: ${application.role}
+
+${availabilityDate ? `DATE DE DISPONIBILITÉ FOURNIE: ${new Date(availabilityDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}\nTu DOIS mentionner cette date de disponibilité dans le corps de la lettre de manière naturelle.\n` : 'AUCUNE date de disponibilité fournie - N\'en invente PAS.\n'}
+
+DESCRIPTION DU POSTE:
+${application.jobDescription}
+
+CV DU CANDIDAT (SOURCE UNIQUE ET OBLIGATOIRE d'informations):
+${cvContent}
+
+INSTRUCTIONS FINALES CRITIQUES:
+1. ✅ EN-TÊTE: STRICTEMENT nom complet + email (RIEN D'AUTRE - pas d'adresse, pas de téléphone, pas de portfolio, pas de date)
+2. ✅ ZÉRO INVENTION: Utilise UNIQUEMENT les informations du CV fourni
+3. ✅ QUALITÉ EXCEPTIONNELLE: Personnalisation profonde pour ${recipientInfo.companyName} et ${application.role}
+4. ✅ PREUVES CONCRÈTES: Réalisations avec chiffres et impact mesurable (du CV)
+5. ✅ LONGUEUR: ${style.startsWith('french') ? '250-350 mots' : '200-300 words'} - concis et percutant
+6. ✅ FORMATAGE: Texte pur (JAMAIS d'astérisques ** ou markdown)
+7. ✅ AUTO-RÉVISION: Vérifie ta génération AVANT de soumettre et améliore si nécessaire
+8. ✅ AUTHENTICITÉ: Évite les clichés, le marketing vide, les exagérations
+
+⚠️ DERNIÈRE VÉRIFICATION AVANT SOUMISSION - CHECKLIST OBLIGATOIRE:
+□ L'en-tête contient UNIQUEMENT le nom et l'email (2 lignes seulement)?
+□ Il n'y a AUCUNE adresse postale nulle part dans l'en-tête?
+□ Il n'y a AUCUN numéro de téléphone nulle part dans l'en-tête?
+□ Il n'y a AUCUN portfolio/website nulle part dans l'en-tête?
+□ Il n'y a AUCUNE date dans l'en-tête (avant "Objet:")?
+□ La première ligne de contenu est bien "Objet:" (après nom, email, ligne vide)?
+□ La qualité est VRAIMENT exceptionnelle (pas juste "correcte")?
+□ Les réalisations sont concrètes et mesurables?
+
+Si UNE SEULE case n'est pas cochée: CORRIGE IMMÉDIATEMENT avant de soumettre.
+
+Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:`;
+
+
 
     try {
-      const response = await fetch('/api/generate-resume', {
+      const response = await fetch('/api/generate-cover-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
@@ -173,9 +557,9 @@ Create a tailored, professional resume that highlights relevant skills and exper
       }
 
       const data = await response.json();
-      return data.resume;
+      return data.coverLetter;
     } catch (error) {
-      console.error('CV generation failed:', error);
+      console.error('Cover letter generation failed:', error);
       throw error;
     }
   };
@@ -233,6 +617,7 @@ Create a tailored, professional resume that highlights relevant skills and exper
         jobUrl: data.jobUrl,
         selectedTemplateId: usedTemplateId,
         cvVersions: [firstCV],
+        coverLetters: [],
         status: 'draft',
         statusHistory: [
           {
@@ -254,7 +639,7 @@ Create a tailored, professional resume that highlights relevant skills and exper
       saveApplications(updatedApps);
       setShowNewAppModal(false);
       
-      addToast('success', `✨ CV generated for ${data.company}!`);
+      addToast('success', `CV created for ${data.company}`);
     } catch (error) {
       addToast('error', 'Failed to generate CV. Please try again.');
     } finally {
@@ -267,11 +652,15 @@ Create a tailored, professional resume that highlights relevant skills and exper
       if (app.id === appId) {
         return {
           ...app,
-          status: 'sent' as ApplicationStatus,
+          status: 'waiting' as ApplicationStatus,
           statusHistory: [
             ...app.statusHistory,
             {
               status: 'sent' as ApplicationStatus,
+              timestamp: Date.now(),
+            },
+            {
+              status: 'waiting' as ApplicationStatus,
               timestamp: Date.now(),
             },
           ],
@@ -285,38 +674,118 @@ Create a tailored, professional resume that highlights relevant skills and exper
       }
       return app;
     });
-    
+
     saveApplications(updatedApps);
-    addToast('success', '✓ Marked as sent!');
+    addToast('success', 'Application marked as sent');
   };
 
-  const toggleInterview = (appId: string, hasInterview: boolean) => {
-    if (hasInterview) {
-      // Show modal to add interview details
-      setInterviewAppId(appId);
-      const app = applications.find(a => a.id === appId);
-      if (app?.tracking.interviewScheduled) {
-        // Pre-fill if already exists
-        const interview = app.tracking.interviewScheduled;
-        setInterviewDate(new Date(interview.date).toISOString().split('T')[0]);
-        setInterviewTime(new Date(interview.date).toTimeString().slice(0, 5));
-        setInterviewLocation(interview.location || '');
+  const markAsRejected = (appId: string) => {
+    const updatedApps = applications.map(app => {
+      if (app.id === appId) {
+        return {
+          ...app,
+          status: 'rejected' as ApplicationStatus,
+          statusHistory: [
+            ...app.statusHistory,
+            {
+              status: 'rejected' as ApplicationStatus,
+              timestamp: Date.now(),
+            },
+          ],
+        };
       }
-      setShowInterviewModal(true);
-    } else {
-      // Remove interview
-      const updatedApps = applications.map(app => {
-        if (app.id === appId) {
-          const { interviewScheduled, ...restTracking } = app.tracking;
+      return app;
+    });
+
+    saveApplications(updatedApps);
+    addToast('info', 'Application marked as rejected');
+  };
+
+  const markAsClosed = (appId: string, reason: import('./types').ClosedReason) => {
+    const updatedApps = applications.map(app => {
+      if (app.id === appId) {
+        return {
+          ...app,
+          status: 'closed' as ApplicationStatus,
+          statusHistory: [
+            ...app.statusHistory,
+            {
+              status: 'closed' as ApplicationStatus,
+              timestamp: Date.now(),
+              note: `Closed: ${reason}`,
+            },
+          ],
+          tracking: {
+            ...app.tracking,
+            closedReason: reason,
+            closedDate: Date.now(),
+          },
+        };
+      }
+      return app;
+    });
+
+    saveApplications(updatedApps);
+
+    if (reason === 'accepted') {
+      addToast('success', 'Offer accepted');
+    } else if (reason === 'declined') {
+      addToast('info', 'Offer declined');
+    } else if (reason === 'expired') {
+      addToast('info', 'Application marked as expired');
+    }
+  };
+
+  const toggleOffer = (appId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    const updatedApps = applications.map(a => {
+      if (a.id === appId) {
+        // Toggle: if already offer, revert to interview or waiting based on history
+        if (a.status === 'offer') {
+          // Find the previous status from history (before offer)
+          const previousStatus = a.statusHistory.length >= 2
+            ? a.statusHistory[a.statusHistory.length - 2].status
+            : 'waiting' as ApplicationStatus;
+
           return {
-            ...app,
-            status: 'sent' as ApplicationStatus,
-            tracking: restTracking,
+            ...a,
+            status: previousStatus,
+            statusHistory: [
+              ...a.statusHistory,
+              {
+                status: previousStatus,
+                timestamp: Date.now(),
+                note: 'Offer status removed',
+              },
+            ],
+          };
+        } else {
+          // Set as offer
+          return {
+            ...a,
+            status: 'offer' as ApplicationStatus,
+            statusHistory: [
+              ...a.statusHistory,
+              {
+                status: 'offer' as ApplicationStatus,
+                timestamp: Date.now(),
+                note: 'Offer received',
+              },
+            ],
           };
         }
-        return app;
-      });
-      saveApplications(updatedApps);
+      }
+      return a;
+    });
+
+    saveApplications(updatedApps);
+
+    if (app.status === 'offer') {
+      addToast('info', 'Offer status removed');
+    } else {
+      addToast('success', 'Offer received');
     }
   };
 
@@ -344,12 +813,105 @@ Create a tailored, professional resume that highlights relevant skills and exper
     });
 
     saveApplications(updatedApps);
-    setShowInterviewModal(false);
+    closeInterviewModal();
     setInterviewAppId(null);
     setInterviewDate('');
     setInterviewTime('');
     setInterviewLocation('');
     addToast('success', 'Interview scheduled!');
+  };
+
+  const closeInterviewModal = () => {
+    setShowInterviewModal(false);
+    setIsEditingInterview(false);
+  };
+
+  const addToCalendar = (appId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app || !app.tracking.interviewScheduled) return;
+
+    const interview = app.tracking.interviewScheduled;
+    const startDate = new Date(interview.date);
+    const endDate = new Date(interview.date + 60 * 60 * 1000); // +1 hour
+
+    // Format dates for iCalendar (YYYYMMDDTHHmmss)
+    const formatICSDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Res Buildr//Interview//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `DTSTART:${formatICSDate(startDate)}`,
+      `DTEND:${formatICSDate(endDate)}`,
+      `DTSTAMP:${formatICSDate(new Date())}`,
+      `UID:interview-${app.id}@resbuildr.com`,
+      `SUMMARY:Interview - ${app.role} at ${app.company}`,
+      `DESCRIPTION:Interview for the position of ${app.role} at ${app.company}`,
+      interview.location ? `LOCATION:${interview.location.replace(/,/g, '\\,')}` : '',
+      'STATUS:CONFIRMED',
+      'SEQUENCE:0',
+      'BEGIN:VALARM',
+      'TRIGGER:-PT30M',
+      'DESCRIPTION:Interview reminder',
+      'ACTION:DISPLAY',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].filter(Boolean).join('\r\n');
+
+    // Create download
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Interview_${app.company}_${app.role}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    addToast('success', 'Calendar event downloaded');
+  };
+
+  const deleteInterview = (appId: string) => {
+    const updatedApps = applications.map(app => {
+      if (app.id === appId) {
+        // Remove interview scheduled and potentially revert status
+        const newTracking = { ...app.tracking };
+        delete newTracking.interviewScheduled;
+
+        // If status is 'interview', revert to 'waiting'
+        const newStatus = app.status === 'interview' ? 'waiting' as ApplicationStatus : app.status;
+
+        return {
+          ...app,
+          tracking: newTracking,
+          status: newStatus,
+          statusHistory: [
+            ...app.statusHistory,
+            {
+              status: newStatus,
+              timestamp: Date.now(),
+              note: 'Interview cancelled',
+            },
+          ],
+        };
+      }
+      return app;
+    });
+
+    saveApplications(updatedApps);
+    setExpandedInterviewId(null);
+    setShowInterviewModal(false);
+    setInterviewAppId(null);
+    setInterviewDate('');
+    setInterviewTime('');
+    setInterviewLocation('');
+    addToast('info', 'Interview deleted');
   };
 
   const copyToClipboard = (text: string) => {
@@ -428,11 +990,45 @@ Create a tailored, professional resume that highlights relevant skills and exper
     addToast('success', 'CV updated successfully!');
   };
 
-  const deleteApplication = (appId: string) => {
+  const deleteApplication = async (appId: string) => {
     const updatedApps = applications.filter(app => app.id !== appId);
-    saveApplications(updatedApps);
+    setApplications(updatedApps);
     setSelectedApp(null); // Close modal
+
+    // Delete from Supabase
+    await deleteAppFromDb(appId);
     addToast('success', 'Application deleted successfully!');
+  };
+
+  const deleteCV = async (appId: string, cvId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app || app.cvVersions.length <= 1) {
+      addToast('error', 'Cannot delete the only CV version');
+      return;
+    }
+
+    const updatedApps = applications.map(a => {
+      if (a.id === appId) {
+        const remainingVersions = a.cvVersions.filter(cv => cv.id !== cvId);
+        return { ...a, cvVersions: remainingVersions };
+      }
+      return a;
+    });
+
+    setApplications(updatedApps);
+
+    // Delete from Supabase
+    await deleteCVVersion(cvId);
+
+    // Update selectedApp
+    if (selectedApp?.id === appId) {
+      const updatedApp = updatedApps.find(a => a.id === appId);
+      if (updatedApp) {
+        setSelectedApp(updatedApp);
+      }
+    }
+
+    addToast('success', 'CV version deleted');
   };
 
   const createNewCVVersion = (appId: string, currentCvId: string) => {
@@ -472,10 +1068,201 @@ Create a tailored, professional resume that highlights relevant skills and exper
     return newVersion.id;
   };
 
+  // Cover Letter Handlers
+  const createCoverLetter = async (
+    appId: string,
+    style: import('./types').CoverLetterStyle,
+    recipientInfo: import('./types').RecipientInfo,
+    availabilityDate?: string
+  ) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    try {
+      setGeneratingCoverLetter(true);
+
+      const content = await generateCoverLetter(app, style, recipientInfo, availabilityDate);
+
+      const newCoverLetter: import('./types').CoverLetter = {
+        id: `cl-${Date.now()}`,
+        version: app.coverLetters.length + 1,
+        content,
+        style,
+        recipientInfo,
+        generatedBy: 'ai',
+        createdAt: Date.now(),
+      };
+
+      const updatedApps = applications.map(a =>
+        a.id === appId
+          ? { ...a, coverLetters: [...a.coverLetters, newCoverLetter] }
+          : a
+      );
+
+      saveApplications(updatedApps);
+
+      // Update selectedApp
+      if (selectedApp?.id === appId) {
+        const updatedApp = updatedApps.find(a => a.id === appId);
+        if (updatedApp) {
+          setSelectedApp(updatedApp);
+        }
+      }
+
+      addToast('success', 'Cover letter generated successfully!');
+      return newCoverLetter.id;
+    } catch (error) {
+      addToast('error', 'Failed to generate cover letter');
+      throw error;
+    } finally {
+      setGeneratingCoverLetter(false);
+    }
+  };
+
+  const updateCoverLetter = (appId: string, coverLetterId: string, newContent: string) => {
+    const updatedApps = applications.map(app => {
+      if (app.id === appId) {
+        return {
+          ...app,
+          coverLetters: app.coverLetters.map(cl =>
+            cl.id === coverLetterId
+              ? { ...cl, content: newContent, modifiedAt: Date.now() }
+              : cl
+          )
+        };
+      }
+      return app;
+    });
+
+    saveApplications(updatedApps);
+
+    // Update selectedApp
+    if (selectedApp?.id === appId) {
+      const updatedApp = updatedApps.find(a => a.id === appId);
+      if (updatedApp) {
+        setSelectedApp(updatedApp);
+      }
+    }
+
+    addToast('success', 'Cover letter updated!');
+  };
+
+  const deleteCoverLetter = async (appId: string, coverLetterId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app || app.coverLetters.length <= 1) {
+      addToast('error', 'Cannot delete the only cover letter version');
+      return;
+    }
+
+    const updatedApps = applications.map(a => {
+      if (a.id === appId) {
+        const remainingLetters = a.coverLetters.filter(cl => cl.id !== coverLetterId);
+        return { ...a, coverLetters: remainingLetters };
+      }
+      return a;
+    });
+
+    setApplications(updatedApps);
+
+    // Delete from Supabase
+    await deleteCoverLetterFromDb(coverLetterId);
+
+    // Update selectedApp
+    if (selectedApp?.id === appId) {
+      const updatedApp = updatedApps.find(a => a.id === appId);
+      if (updatedApp) {
+        setSelectedApp(updatedApp);
+      }
+    }
+
+    addToast('success', 'Cover letter deleted');
+  };
+
+  const createNewCoverLetterVersion = (appId: string, currentCoverLetterId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    // Find current cover letter to copy its content and info
+    const currentCoverLetter = app.coverLetters.find(cl => cl.id === currentCoverLetterId);
+    if (!currentCoverLetter) return;
+
+    const newVersion: import('./types').CoverLetter = {
+      id: `cl-${Date.now()}`,
+      version: app.coverLetters.length + 1,
+      content: currentCoverLetter.content,
+      style: currentCoverLetter.style,
+      recipientInfo: currentCoverLetter.recipientInfo,
+      createdAt: Date.now(),
+      modifiedAt: Date.now(),
+      generatedBy: 'manual',
+    };
+
+    const updatedApps = applications.map(a =>
+      a.id === appId
+        ? { ...a, coverLetters: [...a.coverLetters, newVersion] }
+        : a
+    );
+
+    saveApplications(updatedApps);
+
+    // Update selectedApp
+    if (selectedApp?.id === appId) {
+      const updatedApp = updatedApps.find(a => a.id === appId);
+      if (updatedApp) {
+        setSelectedApp(updatedApp);
+      }
+    }
+
+    addToast('success', 'New cover letter version created!');
+    return newVersion.id;
+  };
+
+  const setMainCoverLetter = (appId: string, coverLetterId: string) => {
+    const updatedApps = applications.map(a => {
+      if (a.id === appId) {
+        const selected = a.coverLetters.find(cl => cl.id === coverLetterId);
+        if (!selected) return a;
+        const others = a.coverLetters.filter(cl => cl.id !== coverLetterId);
+        return { ...a, coverLetters: [selected, ...others] };
+      }
+      return a;
+    });
+
+    saveApplications(updatedApps);
+
+    if (selectedApp?.id === appId) {
+      const updatedApp = updatedApps.find(a => a.id === appId);
+      if (updatedApp) setSelectedApp({ ...updatedApp });
+    }
+
+    addToast('success', 'Main cover letter updated!');
+  };
+
+  const downloadCoverLetter = (coverLetter: import('./types').CoverLetter, app: Application) => {
+    const element = document.createElement('a');
+    const file = new Blob([coverLetter.content], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${app.company}_${app.role}_CoverLetter_v${coverLetter.version}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+
+    addToast('success', 'Cover letter downloaded!');
+  };
+
   // Filter applications
-  const filteredApps = filterStatus === 'all' 
-    ? applications 
-    : applications.filter(a => a.status === filterStatus);
+  const filteredApps = filterStatus === 'all'
+    ? applications
+    : filterStatus === 'sent'
+      // "Sent" includes all applications that have been sent (have sentDate or appliedAt)
+      ? applications.filter(a => a.tracking.sentDate || a.appliedAt)
+      : filterStatus === 'waiting'
+        // "Waiting" includes sent, waiting, and interview statuses (all pending final response)
+        ? applications.filter(a => a.status === 'sent' || a.status === 'waiting' || a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected'))
+        : filterStatus === 'interview'
+          // Interview: status is 'interview' OR has interviewScheduled
+          ? applications.filter(a => a.status === 'interview' || a.tracking.interviewScheduled)
+          : applications.filter(a => a.status === filterStatus);
 
   // Sort by most recent
   const sortedApps = [...filteredApps].sort((a, b) => b.createdAt - a.createdAt);
@@ -484,13 +1271,49 @@ Create a tailored, professional resume that highlights relevant skills and exper
   const stats = {
     total: applications.length,
     draft: applications.filter(a => a.status === 'draft').length,
-    sent: applications.filter(a => a.status === 'sent').length,
-    waiting: applications.filter(a => a.status === 'waiting').length,
-    interview: applications.filter(a => a.status === 'interview').length,
+    // "Sent" includes all applications that have been sent (have sentDate or appliedAt)
+    sent: applications.filter(a => a.tracking.sentDate || a.appliedAt).length,
+    // "Waiting" includes sent, waiting, and interview (all pending final response)
+    waiting: applications.filter(a => a.status === 'sent' || a.status === 'waiting' || a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed')).length,
+    // Interview: status is 'interview' OR has interviewScheduled
+    interview: applications.filter(a => a.status === 'interview' || a.tracking.interviewScheduled).length,
+    offer: applications.filter(a => a.status === 'offer').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
+    closed: applications.filter(a => a.status === 'closed').length,
   };
 
+  // Calculate analytics-first KPIs (Priority D: Effort ROI)
+  const sentCount = stats.sent;
+  const interviewCount = stats.interview;
+  const interviewRate = sentCount > 0 ? Math.round((interviewCount / sentCount) * 100) : 0;
+
+  // Active opportunities (Priority C: Positive success indicators)
+  const activeOpps = applications.filter(a =>
+    ['sent', 'waiting', 'interview'].includes(a.status)
+  ).length;
+
+  // Response time context - calculate based on interview scheduled or outcome dates
+  const respondedApps = applications.filter(a => {
+    if (!a.tracking.sentDate) return false;
+    // Consider "responded" if they scheduled interview or gave outcome
+    return a.tracking.interviewScheduled || a.tracking.outcome;
+  });
+
+  const avgResponseTime = respondedApps.length > 0
+    ? Math.round(
+        respondedApps.reduce((sum, app) => {
+          const sent = new Date(app.tracking.sentDate!);
+          // Use interview date or outcome date as response
+          const responseDate = app.tracking.interviewScheduled?.date || app.tracking.outcome?.date;
+          if (!responseDate) return sum;
+          const responded = new Date(responseDate);
+          return sum + (responded.getTime() - sent.getTime());
+        }, 0) / respondedApps.length / (1000 * 60 * 60 * 24)
+      )
+    : null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors duration-200">
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <NewApplicationModal
         isOpen={showNewAppModal}
@@ -500,58 +1323,219 @@ Create a tailored, professional resume that highlights relevant skills and exper
       />
 
       {/* Header */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-30">
+      <div className="bg-white dark:bg-primary-800 border-b border-primary-200 dark:border-primary-700 shadow-sm sticky top-0 z-30 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              🎯 Job Hunter Pro
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              AI-Powered Resume Builder & Application Tracker
-            </p>
+          <div className="flex items-center gap-4">
+            <img src="/logo.svg" alt="Logo" className="h-10 w-auto" />
+            <div>
+              <h1 className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
+                Applications
+              </h1>
+            </div>
           </div>
-          <Button onClick={() => setShowNewAppModal(true)} size="lg">
-            ➕ New Application
-          </Button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button onClick={() => setShowNewAppModal(true)} size="lg">
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+              New application
+            </Button>
+            {user && (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 pl-4 border-l border-primary-200 dark:border-primary-600 text-sm text-primary-600 dark:text-primary-300 hover:text-primary-900 dark:hover:text-primary-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-white font-medium text-xs">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="hidden sm:inline">{user.email}</span>
+                    {!profileComplete && (
+                      <span className="w-2 h-2 bg-warning-500 rounded-full" title="Incomplete profile" />
+                    )}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} aria-hidden="true" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-primary-800 rounded-lg shadow-lg border border-primary-200 dark:border-primary-700 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-primary-100 dark:border-primary-700">
+                      <p className="text-sm font-medium text-primary-900 dark:text-primary-100 truncate">{user.email}</p>
+                      {profile?.fullName && (
+                        <p className="text-xs text-primary-500 dark:text-primary-400 truncate">{profile.fullName}</p>
+                      )}
+                      {!profileComplete && (
+                        <p className="text-xs text-warning-600 dark:text-warning-400 mt-1 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-warning-500 rounded-full" />
+                          Incomplete profile
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push('/account');
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-700 flex items-center gap-3"
+                      >
+                        <User className="w-4 h-4" aria-hidden="true" />
+                        <span>Account</span>
+                        {!profileComplete && (
+                          <span className="ml-auto text-xs bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400 px-2 py-0.5 rounded-full">
+                            Incomplete
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="border-t border-primary-100 dark:border-primary-700 py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          signOut();
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 flex items-center gap-3"
+                      >
+                        <LogOut className="w-4 h-4" aria-hidden="true" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-xs text-gray-600">Total</div>
+        {/* Analytics-First Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 mb-6">
+          {/* PRIMARY KPIs - Success Metrics */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-medium text-primary-500 dark:text-primary-400 uppercase tracking-wide">Performance metrics</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Interview Rate */}
+              <div className="stat-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-success-600 dark:text-success-400 uppercase tracking-wide">Interview rate</span>
+                  <TrendingUp className="w-5 h-5 text-success-500" aria-hidden="true" />
+                </div>
+                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">{interviewRate}%</div>
+                <div className="text-xs text-primary-500 dark:text-primary-400">
+                  {interviewCount} of {sentCount} sent
+                </div>
+                {interviewRate >= 15 && (
+                  <div className="mt-2 text-xs font-medium text-success-600 dark:text-success-400">
+                    Above average
+                  </div>
+                )}
+              </div>
+
+              {/* Active Opportunities */}
+              <div className="stat-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-info-600 dark:text-info-400 uppercase tracking-wide">Active</span>
+                  <Target className="w-5 h-5 text-info-500" aria-hidden="true" />
+                </div>
+                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">{activeOpps}</div>
+                <div className="text-xs text-primary-500 dark:text-primary-400">
+                  In progress
+                </div>
+              </div>
+
+              {/* Response Time */}
+              <div className="stat-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">Avg response</span>
+                  <Clock className="w-5 h-5 text-primary-400" aria-hidden="true" />
+                </div>
+                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
+                  {avgResponseTime !== null ? avgResponseTime : '--'}
+                </div>
+                <div className="text-xs text-primary-500 dark:text-primary-400">
+                  {avgResponseTime !== null ? 'days' : 'No data yet'}
+                </div>
+              </div>
+            </div>
+
+            {/* Offers Section */}
+            {stats.offer > 0 && (
+              <div className="bg-success-50 dark:bg-success-900/20 rounded-lg shadow-md p-5 border border-success-200 dark:border-success-700/30">
+                <div className="flex items-center gap-3">
+                  <Star className="w-8 h-8 text-success-500" aria-hidden="true" />
+                  <div>
+                    <div className="text-xl font-semibold text-success-700 dark:text-success-300">
+                      {stats.offer} offer{stats.offer > 1 ? 's' : ''} received
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
-            <div className="text-xs text-gray-600">Draft</div>
-          </div>
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.sent}</div>
-            <div className="text-xs text-blue-600">Sent</div>
-          </div>
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.waiting}</div>
-            <div className="text-xs text-yellow-600">Waiting</div>
-          </div>
-          <div className="bg-white rounded-xl shadow p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.interview}</div>
-            <div className="text-xs text-purple-600">Interview</div>
+
+          {/* PIPELINE FUNNEL */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-medium text-primary-500 dark:text-primary-400 uppercase tracking-wide">Pipeline</h2>
+            <div className="bg-white dark:bg-primary-800 rounded-lg shadow-md p-5 border border-primary-200 dark:border-primary-700 space-y-3">
+              {/* Draft */}
+              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary-400" aria-hidden="true" />
+                  <span className="font-medium text-primary-700 dark:text-primary-300">Draft</span>
+                </div>
+                <span className="text-xl font-semibold text-primary-600 dark:text-primary-300">{stats.draft}</span>
+              </div>
+
+              {/* Sent */}
+              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
+                <div className="flex items-center gap-2">
+                  <Send className="w-5 h-5 text-info-500" aria-hidden="true" />
+                  <span className="font-medium text-primary-700 dark:text-primary-300">Sent</span>
+                </div>
+                <span className="text-xl font-semibold text-info-600 dark:text-info-400">{stats.sent}</span>
+              </div>
+
+              {/* Interview */}
+              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-accent-500" aria-hidden="true" />
+                  <span className="font-medium text-primary-700 dark:text-primary-300">Interview</span>
+                </div>
+                <span className="text-xl font-semibold text-accent-600 dark:text-accent-400">{stats.interview}</span>
+              </div>
+
+              {/* Offer */}
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-success-500" aria-hidden="true" />
+                  <span className="font-medium text-primary-700 dark:text-primary-300">Offer</span>
+                </div>
+                <span className="text-xl font-semibold text-success-600 dark:text-success-400">{stats.offer}</span>
+              </div>
+            </div>
+
+            {/* Archive filter info */}
+            {filterStatus === 'rejected' && stats.rejected > 0 && (
+              <div className="bg-primary-50 dark:bg-primary-800/50 rounded-lg p-3 border border-primary-200 dark:border-primary-700">
+                <div className="text-xs text-primary-500 dark:text-primary-400 text-center">
+                  {stats.rejected} archived application{stats.rejected > 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 mb-6">
-          {(['all', 'draft', 'sent', 'waiting', 'interview'] as const).map(status => (
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {(['all', 'draft', 'sent', 'waiting', 'interview', 'offer', 'rejected', 'closed'] as const).map(status => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all capitalize ${
-                filterStatus === status
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow'
-              }`}
+              className={`filter-pill capitalize ${filterStatus === status ? 'active' : ''}`}
             >
               {status} ({status === 'all' ? applications.length : stats[status as keyof typeof stats] || 0})
             </button>
@@ -560,93 +1544,308 @@ Create a tailored, professional resume that highlights relevant skills and exper
 
         {/* Applications List */}
         {sortedApps.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="text-8xl mb-6">📄</div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+          <div className="bg-white dark:bg-primary-800 rounded-lg shadow-lg p-12 text-center border border-primary-200 dark:border-primary-700">
+            <FileText className="w-16 h-16 mx-auto mb-6 text-primary-300 dark:text-primary-600" aria-hidden="true" />
+            <h2 className="text-2xl font-semibold text-primary-900 dark:text-primary-50 mb-3">
               No applications yet
             </h2>
-            <p className="text-gray-600 mb-8 text-lg">
-              Start tracking your job applications and let AI generate perfect resumes
+            <p className="text-primary-600 dark:text-primary-400 mb-8">
+              Start tracking your job applications and create professional resumes
             </p>
             <Button onClick={() => setShowNewAppModal(true)} size="lg">
-              Create Your First Application
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+              Create your first application
             </Button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="divide-y divide-gray-100">
+          <div className="bg-white dark:bg-primary-800 rounded-lg shadow-lg overflow-hidden border border-primary-200 dark:border-primary-700">
+            <div className="divide-y divide-primary-100 dark:divide-primary-700">
               {sortedApps.map(app => {
-                const isSent = app.status === 'sent' || app.status === 'waiting' || app.status === 'interview';
-                const hasInterview = app.status === 'interview' && app.tracking.interviewScheduled;
+                const isSent = app.status === 'sent' || app.status === 'waiting' || app.status === 'interview' || app.status === 'offer';
+                const hasInterview = !!app.tracking.interviewScheduled;
+                const isRejected = app.status === 'rejected';
+                const hasOffer = app.status === 'offer';
+                const isClosed = app.status === 'closed';
+
+                const isExpired = app.tracking.sentDate && !app.tracking.interviewScheduled && !app.tracking.outcome
+                  ? (Date.now() - app.tracking.sentDate) / (1000 * 60 * 60 * 24) > 30
+                  : false;
 
                 return (
-                  <div
-                    key={app.id}
-                    className="p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      {/* Left: Job Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-bold text-gray-900">
-                            {app.role}
-                          </h3>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-600">{app.company}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            app.status === 'draft' ? 'bg-gray-100 text-gray-600' :
-                            app.status === 'sent' ? 'bg-blue-100 text-blue-600' :
-                            app.status === 'interview' ? 'bg-purple-100 text-purple-600' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {app.status.toUpperCase()}
-                          </span>
+                  <div key={app.id}>
+                    <div
+                      className="p-4 hover:bg-primary-50 dark:hover:bg-primary-700/50 transition-colors cursor-pointer"
+                      onClick={() => hasInterview && setExpandedInterviewId(expandedInterviewId === app.id ? null : app.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        {/* Left: Job Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-50">
+                              {app.role}
+                            </h3>
+                            <span className="text-primary-300 dark:text-primary-600">•</span>
+                            <span className="text-primary-600 dark:text-primary-400">{app.company}</span>
+                            <span className={`badge ${
+                              app.status === 'draft' ? 'badge-draft' :
+                              app.status === 'sent' ? 'badge-sent' :
+                              app.status === 'waiting' ? 'badge-waiting' :
+                              app.status === 'interview' ? 'badge-interview' :
+                              app.status === 'offer' ? 'badge-offer' :
+                              app.status === 'rejected' ? 'badge-rejected' :
+                              app.status === 'closed' ? (
+                                app.tracking.closedReason === 'accepted' ? 'badge-offer' :
+                                app.tracking.closedReason === 'declined' ? 'badge-waiting' :
+                                'badge-draft'
+                              ) :
+                              'badge-draft'
+                            }`}>
+                              {app.status === 'closed' ? (
+                                app.tracking.closedReason === 'accepted' ? 'ACCEPTED' :
+                                app.tracking.closedReason === 'declined' ? 'DECLINED' :
+                                'EXPIRED'
+                              ) : app.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="text-sm text-primary-500 dark:text-primary-400 mt-1">
+                            Created {new Date(app.createdAt).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          Created {new Date(app.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
 
-                      {/* Right: Action Buttons */}
-                      <div className="flex items-center gap-3">
-                        {/* Edit Button */}
-                        <button
-                          onClick={() => setSelectedApp(app)}
-                          className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium transition-colors"
-                        >
-                          ✏️ Edit
-                        </button>
-
-                        {/* Send Button */}
-                        <button
-                          onClick={() => !isSent && markAsSent(app.id)}
-                          disabled={isSent}
-                          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                            isSent
-                              ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {isSent ? '✓ Sent' : 'Send'}
-                        </button>
-
-                        {/* Interview Button */}
+                        {/* Right: Action Buttons */}
                         <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!hasInterview}
-                            onChange={(e) => toggleInterview(app.id, e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300"
-                          />
+                          {/* Edit Button */}
                           <button
-                            onClick={() => hasInterview && setInterviewAppId(app.id) && setShowInterviewModal(true)}
-                            className="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 font-medium transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedApp(app);
+                            }}
+                            className="btn-icon"
+                            title="Edit CV"
+                            aria-label="Edit CV"
                           >
-                            Interview
+                            <Edit2 className="w-5 h-5" aria-hidden="true" />
+                          </button>
+
+                          {/* Send Button - Hide when closed */}
+                          {!isClosed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                !isSent && markAsSent(app.id);
+                              }}
+                              disabled={isSent}
+                              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                isSent
+                                  ? 'bg-info-600 text-white cursor-not-allowed opacity-70'
+                                  : 'bg-info-600 text-white hover:bg-info-700 shadow-sm hover:shadow-md'
+                              }`}
+                              title={isSent ? 'Application sent' : 'Mark application as sent'}
+                            >
+                              <Send className="w-4 h-4" aria-hidden="true" />
+                              {isSent ? 'Sent' : 'Send'}
+                            </button>
+                          )}
+
+                          {/* Interview Button - Hide when closed */}
+                          {!isClosed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInterviewAppId(app.id);
+                                setShowInterviewModal(true);
+                              }}
+                              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                                hasInterview
+                                  ? 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300'
+                                  : 'bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/40'
+                              }`}
+                              title={hasInterview ? 'View interview details' : 'Schedule interview'}
+                            >
+                              <Calendar className="w-4 h-4" aria-hidden="true" />
+                              {hasInterview ? 'Interview' : 'Interview'}
+                            </button>
+                          )}
+
+                          {/* Validated/Offer Button - Enhanced with Accept confirmation */}
+                          {!isClosed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasOffer) {
+                                  // If already offer, show confirmation to accept
+                                  if (window.confirm(`Accept the offer from ${app.company}? This will close the application.`)) {
+                                    markAsClosed(app.id, 'accepted');
+                                  }
+                                } else {
+                                  // Toggle to offer status
+                                  toggleOffer(app.id);
+                                }
+                              }}
+                              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                hasOffer
+                                  ? 'bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 shadow-sm hover:bg-success-200 dark:hover:bg-success-900/40'
+                                  : 'bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-300 hover:bg-success-100 dark:hover:bg-success-900/30'
+                              }`}
+                              title={hasOffer ? 'Click to accept offer' : 'Mark as offer received'}
+                            >
+                              <Star className="w-4 h-4" aria-hidden="true" />
+                              {hasOffer ? 'Offer' : 'Offer'}
+                            </button>
+                          )}
+
+                          {/* Decline Button - Only show when status is 'offer' */}
+                          {hasOffer && !isClosed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Decline the offer from ${app.company}?`)) {
+                                  markAsClosed(app.id, 'declined');
+                                }
+                              }}
+                              className="px-4 py-2 bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-300 rounded-lg hover:bg-warning-100 dark:hover:bg-warning-900/30 font-medium transition-colors border border-warning-200 dark:border-warning-700/30"
+                              title="Decline this offer"
+                            >
+                              Decline
+                            </button>
+                          )}
+
+                          {/* Expire Button - Only show for old applications without response */}
+                          {isExpired && !isClosed && !isRejected && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Mark application as expired (no response after 30+ days)?`)) {
+                                  markAsClosed(app.id, 'expired');
+                                }
+                              }}
+                              className="px-4 py-2 bg-primary-50 dark:bg-primary-700/50 text-primary-700 dark:text-primary-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-700 font-medium transition-colors border border-primary-200 dark:border-primary-600"
+                              title="Mark as expired (no response)"
+                            >
+                              Expire
+                            </button>
+                          )}
+
+                          {/* Rejected Button */}
+                          {!isClosed && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isSent && !isRejected) markAsRejected(app.id);
+                              }}
+                              disabled={isRejected || !isSent}
+                              className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${
+                                isRejected
+                                  ? 'bg-primary-100 dark:bg-primary-700 text-primary-400 dark:text-primary-500 cursor-not-allowed'
+                                  : !isSent
+                                  ? 'bg-primary-50 dark:bg-primary-800 text-primary-300 dark:text-primary-600 cursor-not-allowed'
+                                  : 'bg-primary-100 dark:bg-primary-700 text-primary-600 dark:text-primary-300 hover:bg-error-50 dark:hover:bg-error-900/30 hover:text-error-600 dark:hover:text-error-400'
+                              }`}
+                              title={isRejected ? 'Application rejected' : !isSent ? 'Send application first' : 'Set application as rejected'}
+                              aria-label={isRejected ? 'Application rejected' : !isSent ? 'Send application first' : 'Set application as rejected'}
+                            >
+                              <Ban className="w-5 h-5" aria-hidden="true" />
+                            </button>
+                          )}
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Are you sure you want to delete the application for ${app.role} at ${app.company}?`)) {
+                                deleteApplication(app.id);
+                              }
+                            }}
+                            className="w-10 h-10 flex items-center justify-center bg-error-50 dark:bg-error-900/20 text-error-600 dark:text-error-400 rounded-lg hover:bg-error-100 dark:hover:bg-error-900/30 transition-colors"
+                            title="Delete application"
+                            aria-label="Delete application"
+                          >
+                            <Trash2 className="w-5 h-5" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
                     </div>
+
+                    {/* Interview Details Dropdown */}
+                    {hasInterview && expandedInterviewId === app.id && (
+                      <div className="px-4 py-3 bg-accent-50 dark:bg-accent-900/20 border-t border-accent-100 dark:border-accent-800/30">
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Left: Interview Info */}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-5 h-5 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+                              <span className="text-primary-700 dark:text-primary-200 font-medium">
+                                {new Date(app.tracking.interviewScheduled!.date).toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+                              <span className="text-primary-700 dark:text-primary-200 font-medium">
+                                {new Date(app.tracking.interviewScheduled!.date).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: false
+                                })}
+                              </span>
+                            </div>
+                            {app.tracking.interviewScheduled!.location && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Target className="w-5 h-5 text-accent-600 dark:text-accent-400" aria-hidden="true" />
+                                <span className="text-primary-700 dark:text-primary-200 font-medium flex-1">
+                                  {app.tracking.interviewScheduled!.location}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right: Action Buttons - Aligned vertically */}
+                          <div className="flex flex-col gap-2 items-end">
+                            {app.tracking.interviewScheduled!.location && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyToClipboard(app.tracking.interviewScheduled!.location!);
+                                }}
+                                className="px-3 py-1.5 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-200 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-600 font-medium transition-colors text-xs flex items-center gap-1"
+                                title="Copy address to clipboard"
+                              >
+                                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                                Copy
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToCalendar(app.id);
+                              }}
+                              className="px-3 py-1.5 bg-accent-600 text-white rounded-lg hover:bg-accent-700 font-medium transition-colors text-xs flex items-center gap-1 whitespace-nowrap"
+                              title="Add interview to calendar"
+                            >
+                              <CalendarPlus className="w-3.5 h-3.5" aria-hidden="true" />
+                              Add to Calendar
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Delete this interview? This cannot be undone.')) {
+                                  deleteInterview(app.id);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg hover:bg-error-200 dark:hover:bg-error-900/50 font-medium transition-colors text-xs flex items-center gap-1 border border-error-300 dark:border-error-700/30 whitespace-nowrap"
+                              title="Delete interview"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                              Delete Interview
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -657,84 +1856,127 @@ Create a tailored, professional resume that highlights relevant skills and exper
 
       {/* Interview Modal */}
       {showInterviewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowInterviewModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop z-50 flex items-center justify-center p-4" onClick={closeInterviewModal}>
+          <div className="modal-content max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">
+              <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50">
                 {interviewAppId && applications.find(a => a.id === interviewAppId)?.tracking.interviewScheduled
                   ? 'Interview Details'
                   : 'Schedule Interview'}
               </h3>
-              <button onClick={() => setShowInterviewModal(false)} className="text-gray-400 hover:text-gray-600">
-                ✕
+              <button
+                onClick={closeInterviewModal}
+                className="text-primary-400 dark:text-primary-500 hover:text-primary-600 dark:hover:text-primary-300 p-1 rounded-md hover:bg-primary-100 dark:hover:bg-primary-700 transition-colors"
+                aria-label="Close modal"
+              >
+                <Ban className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            {interviewAppId && applications.find(a => a.id === interviewAppId)?.tracking.interviewScheduled ? (
-              // Show details
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">📅</span>
-                  <span>{new Date(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.date).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🕐</span>
-                  <span>{new Date(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.date).toLocaleTimeString()}</span>
-                </div>
-                {applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">📍</span>
-                    <span className="flex-1">{applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location}</span>
-                    <button
-                      onClick={() => copyToClipboard(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location!)}
-                      className="text-blue-600 hover:text-blue-700"
-                    >
-                      📋
-                    </button>
+            {interviewAppId && applications.find(a => a.id === interviewAppId)?.tracking.interviewScheduled && !isEditingInterview ? (
+              // Show details (read-only mode)
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-accent-500" aria-hidden="true" />
+                    <span className="text-primary-700 dark:text-primary-300">{new Date(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.date).toLocaleDateString()}</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-accent-500" aria-hidden="true" />
+                    <span className="text-primary-700 dark:text-primary-300">{new Date(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.date).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    })}</span>
+                  </div>
+                  {applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location && (
+                    <div className="flex items-center gap-3">
+                      <Target className="w-5 h-5 text-accent-500" aria-hidden="true" />
+                      <span className="flex-1 text-primary-700 dark:text-primary-300">{applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location}</span>
+                      <button
+                        onClick={() => copyToClipboard(applications.find(a => a.id === interviewAppId)!.tracking.interviewScheduled!.location!)}
+                        className="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 p-1 rounded hover:bg-primary-100 dark:hover:bg-primary-700 transition-colors"
+                        aria-label="Copy address"
+                      >
+                        <Copy className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => addToCalendar(interviewAppId)}
+                    className="w-full px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                    title="Add interview to calendar"
+                  >
+                    <CalendarPlus className="w-4 h-4" aria-hidden="true" />
+                    Add to Calendar
+                  </button>
+                  <button
+                    onClick={() => setIsEditingInterview(true)}
+                    className="w-full px-4 py-2 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-200 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-600 font-medium transition-colors text-sm flex items-center justify-center gap-2"
+                    title="Edit interview details"
+                  >
+                    <Edit2 className="w-4 h-4" aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Delete this interview? This cannot be undone.')) {
+                        deleteInterview(interviewAppId);
+                      }
+                    }}
+                    className="w-full px-4 py-2 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg hover:bg-error-200 dark:hover:bg-error-900/50 font-medium transition-colors text-sm border border-error-300 dark:border-error-700/30 flex items-center justify-center gap-2"
+                    title="Delete interview"
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    Delete Interview
+                  </button>
+                </div>
               </div>
             ) : (
               // Edit form
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">Date</label>
                   <input
                     type="date"
                     value={interviewDate}
                     onChange={(e) => setInterviewDate(e.target.value)}
-                    className="w-full p-2 border rounded-lg"
+                    className="input-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                  <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">Time</label>
                   <input
                     type="time"
                     value={interviewTime}
                     onChange={(e) => setInterviewTime(e.target.value)}
-                    className="w-full p-2 border rounded-lg"
+                    className="input-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">Address</label>
                   <input
                     type="text"
                     value={interviewLocation}
                     onChange={(e) => setInterviewLocation(e.target.value)}
                     placeholder="123 Main St, Paris"
-                    className="w-full p-2 border rounded-lg"
+                    className="input-primary"
                   />
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => setShowInterviewModal(false)}
-                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                    className="btn-secondary flex-1"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={saveInterviewDetails}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    className="btn-primary flex-1"
                   >
                     Save
                   </button>
@@ -745,16 +1987,31 @@ Create a tailored, professional resume that highlights relevant skills and exper
         </div>
       )}
 
-      {/* Generating Overlay */}
+      {/* Generating Overlay - CV */}
       {generatingCV && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-12 text-center max-w-md">
-            <div className="animate-spin h-16 w-16 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-6"></div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Generating Your CV...
+        <div className="modal-backdrop z-50 flex items-center justify-center">
+          <div className="modal-content p-12 text-center max-w-md">
+            <div className="spinner w-16 h-16 mx-auto mb-6"></div>
+            <h3 className="text-2xl font-semibold text-primary-900 dark:text-primary-50 mb-2">
+              Generating Your CV
             </h3>
-            <p className="text-gray-600">
+            <p className="text-primary-600 dark:text-primary-400">
               AI is analyzing the job and creating a tailored resume
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Generating Overlay - Cover Letter */}
+      {generatingCoverLetter && (
+        <div className="modal-backdrop z-50 flex items-center justify-center">
+          <div className="modal-content p-12 text-center max-w-md">
+            <div className="spinner w-16 h-16 mx-auto mb-6"></div>
+            <h3 className="text-2xl font-semibold text-primary-900 dark:text-primary-50 mb-2">
+              Generating Cover Letter
+            </h3>
+            <p className="text-primary-600 dark:text-primary-400">
+              AI is crafting a personalized cover letter for this role
             </p>
           </div>
         </div>
@@ -770,6 +2027,13 @@ Create a tailored, professional resume that highlights relevant skills and exper
           onUpdateCV={(appId, cvId, newContent) => updateCV(appId, cvId, newContent)}
           onDeleteApplication={() => deleteApplication(selectedApp.id)}
           onCreateNewVersion={(currentCvId) => createNewCVVersion(selectedApp.id, currentCvId)}
+          onDeleteCV={(cvId) => deleteCV(selectedApp.id, cvId)}
+          onCreateCoverLetter={(appId, style, recipientInfo) => createCoverLetter(appId, style, recipientInfo)}
+          onUpdateCoverLetter={(appId, coverLetterId, newContent) => updateCoverLetter(appId, coverLetterId, newContent)}
+          onDeleteCoverLetter={(appId, coverLetterId) => deleteCoverLetter(appId, coverLetterId)}
+            onCreateNewCoverLetterVersion={(appId, currentCoverLetterId) => createNewCoverLetterVersion(appId, currentCoverLetterId)}
+            onSetMainCoverLetter={(appId, coverLetterId) => setMainCoverLetter(appId, coverLetterId)}
+            onDownloadCoverLetter={(coverLetter) => downloadCoverLetter(coverLetter, selectedApp)}
         />
       )}
     </div>

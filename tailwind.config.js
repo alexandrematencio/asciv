@@ -1,24 +1,142 @@
 /** @type {import('tailwindcss').Config} */
-const path = require('path');
-
-module.exports = {
-  content: [
-    path.join(__dirname, 'app/**/*.{js,ts,jsx,tsx,mdx}'),
-    path.join(__dirname, 'components/**/*.{js,ts,jsx,tsx,mdx}'),
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-javascript/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        // PRIMARY - Slate (Gris ardoise)
+        primary: {
+          DEFAULT: '#64748B',
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#94A3B8',
+          500: '#64748B',
+          600: '#475569',
+          700: '#334155',
+          800: '#1E293B',
+          900: '#0F172A',
+          950: '#020617',
+        },
+        // ACCENT - Violet mat (premium, discret)
+        accent: {
+          DEFAULT: '#A855F7',
+          50: '#FAF5FF',
+          100: '#F3E8FF',
+          200: '#E9D5FF',
+          300: '#D8B4FE',
+          400: '#C084FC',
+          500: '#A855F7',
+          600: '#9333EA',
+          700: '#7C3AED',
+          800: '#6B21A8',
+          900: '#581C87',
+          950: '#3B0764',
+        },
+        // SEMANTIC - Full scales for dark mode support
+        success: {
+          DEFAULT: '#22C55E',
+          50: '#F0FDF4',
+          100: '#DCFCE7',
+          200: '#BBF7D0',
+          300: '#86EFAC',
+          400: '#4ADE80',
+          500: '#22C55E',
+          600: '#16A34A',
+          700: '#15803D',
+          800: '#166534',
+          900: '#14532D',
+        },
+        warning: {
+          DEFAULT: '#EAB308',
+          50: '#FEFCE8',
+          100: '#FEF9C3',
+          200: '#FEF08A',
+          300: '#FDE047',
+          400: '#FACC15',
+          500: '#EAB308',
+          600: '#CA8A04',
+          700: '#A16207',
+          800: '#854D0E',
+          900: '#713F12',
+        },
+        error: {
+          DEFAULT: '#EF4444',
+          50: '#FEF2F2',
+          100: '#FEE2E2',
+          200: '#FECACA',
+          300: '#FCA5A5',
+          400: '#F87171',
+          500: '#EF4444',
+          600: '#DC2626',
+          700: '#B91C1C',
+          800: '#991B1B',
+          900: '#7F1D1D',
+        },
+        info: {
+          DEFAULT: '#3B82F6',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#2563EB',
+          700: '#1D4ED8',
+          800: '#1E40AF',
+          900: '#1E3A8A',
+        },
+        // SURFACE COLORS
+        surface: {
+          DEFAULT: '#FFFFFF',
+          dark: '#1E293B',
+        },
+        // BACKGROUND
+        background: {
+          DEFAULT: '#F8FAFC',
+          dark: '#0F172A',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+      fontSize: {
+        'xs': ['0.75rem', { lineHeight: '1rem' }],
+        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
+        'base': ['1rem', { lineHeight: '1.5rem' }],
+        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
+        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem' }],
+        '3xl': ['2rem', { lineHeight: '2.25rem' }],
+        '4xl': ['2.5rem', { lineHeight: '2.5rem' }],
+      },
+      borderRadius: {
+        'sm': '4px',
+        'md': '8px',
+        'lg': '12px',
+        'xl': '16px',
+      },
+      boxShadow: {
+        'sm': '0 1px 2px rgba(0, 0, 0, 0.04)',
+        'md': '0 2px 8px rgba(0, 0, 0, 0.06)',
+        'lg': '0 4px 16px rgba(0, 0, 0, 0.08)',
+        'xl': '0 8px 32px rgba(0, 0, 0, 0.10)',
+        // Dark mode shadows
+        'dark-sm': '0 1px 2px rgba(0, 0, 0, 0.2)',
+        'dark-md': '0 2px 8px rgba(0, 0, 0, 0.3)',
+        'dark-lg': '0 4px 16px rgba(0, 0, 0, 0.4)',
+        'dark-xl': '0 8px 32px rgba(0, 0, 0, 0.5)',
+      },
+      transitionDuration: {
+        '200': '200ms',
+        '300': '300ms',
+      },
+    },
   },
   plugins: [],
 }

@@ -35,22 +35,42 @@ export interface CVVersion {
   modifiedAt?: number;
 }
 
+export type CoverLetterStyle =
+  | 'french_formal'      // Style français traditionnel, très formel
+  | 'french_modern'      // Style français moderne, professionnel mais moins rigide
+  | 'american_standard'  // Style américain standard
+  | 'american_creative'; // Style américain créatif/startup
+
+export interface RecipientInfo {
+  companyName: string;
+  recipientName?: string;
+  recipientTitle?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+}
+
 export interface CoverLetter {
   id: string;
+  version: number;
   content: string;
-  generatedAt: number;
+  style: CoverLetterStyle;
+  recipientInfo: RecipientInfo;
+  generatedBy: 'ai' | 'manual';
+  createdAt: number;
   modifiedAt?: number;
 }
 
-export type ApplicationStatus = 
-  | 'draft' 
-  | 'sent' 
+export type ClosedReason = 'accepted' | 'declined' | 'expired';
+
+export type ApplicationStatus =
+  | 'draft'
+  | 'sent'
   | 'waiting'
-  | 'interview' 
-  | 'offer' 
-  | 'rejected' 
-  | 'accepted' 
-  | 'archived';
+  | 'interview'
+  | 'offer'
+  | 'rejected'
+  | 'closed';
 
 export type SentVia = 
   | 'indeed' 
@@ -85,6 +105,8 @@ export interface ApplicationTracking {
   followUpDates: number[];
   interviewScheduled?: InterviewInfo;
   outcome?: OutcomeInfo;
+  closedReason?: ClosedReason;
+  closedDate?: number;
 }
 
 export interface StatusChange {
@@ -105,7 +127,7 @@ export interface Application {
   // Template & Content
   selectedTemplateId?: string; // Optional - can be created from scratch
   cvVersions: CVVersion[];
-  coverLetter?: CoverLetter;
+  coverLetters: CoverLetter[]; // Array of cover letter versions
   
   // Status & Timeline
   status: ApplicationStatus;
@@ -140,6 +162,177 @@ export interface DashboardStats {
   interview: number;
   offer: number;
   rejected: number;
+  closed: number;
   interviewRate: number; // percentage
   avgResponseTime: number; // days
+}
+
+// ============================================
+// USER PROFILE TYPES
+// ============================================
+
+export interface Education {
+  id: string;
+  degree: string;
+  institution: string;
+  field: string;
+  startYear: number;
+  endYear?: number;
+  current?: boolean;
+  gpa?: string;
+  honors?: string;
+}
+
+export interface WorkExperience {
+  id: string;
+  title: string;
+  company: string;
+  location?: string;
+  startDate: string; // Format: dd-mm-yyyy (e.g., "01-09-2020")
+  endDate?: string; // Format: dd-mm-yyyy
+  current: boolean;
+  achievements: string[];
+}
+
+export type SkillCategory = 'technical' | 'soft' | 'language' | 'tool';
+export type SkillProficiency = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+
+export interface Skill {
+  id: string;
+  name: string;
+  category: SkillCategory;
+  proficiency?: SkillProficiency;
+}
+
+export interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+  expiryDate?: string;
+  credentialId?: string;
+}
+
+export interface Award {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  description?: string;
+}
+
+export type LanguageProficiency = 'basic' | 'conversational' | 'professional' | 'native' | 'bilingual';
+export type LanguageAcquisition = 'native' | 'education' | 'immersion' | 'self_taught' | 'practice';
+
+export interface LanguageCertification {
+  name: string; // e.g., "TOEFL", "DELF", "JLPT"
+  level?: string; // e.g., "B2", "N2", "C1"
+  score?: string; // e.g., "110/120"
+  date?: string; // When obtained
+}
+
+export interface Language {
+  id: string;
+  language: string;
+  proficiency: LanguageProficiency;
+  acquisition: LanguageAcquisition; // How the language was learned
+  yearsOfPractice?: number; // Years of daily/regular practice
+  certification?: LanguageCertification; // Optional certification
+  notes?: string; // Additional context (e.g., "23 years of daily practice")
+}
+
+export interface Affiliation {
+  id: string;
+  organization: string;
+  role?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface VolunteerExperience {
+  id: string;
+  organization: string;
+  role: string;
+  startDate?: string;
+  endDate?: string;
+  description?: string;
+}
+
+export interface PortfolioLink {
+  id: string;
+  type: 'linkedin' | 'github' | 'portfolio' | 'twitter' | 'dribbble' | 'behance' | 'other';
+  url: string;
+  label?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+
+  // Personal Info (required)
+  fullName: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: string;
+  city?: string;
+  country?: string;
+
+  // Professional Core
+  professionalSummary?: string;
+
+  // Structured Data
+  education: Education[];
+  workExperience: WorkExperience[];
+  skills: Skill[];
+
+  // Extended/Optional
+  certifications: Certification[];
+  awards: Award[];
+  languages: Language[];
+  affiliations: Affiliation[];
+  volunteerExperience: VolunteerExperience[];
+  portfolioLinks: PortfolioLink[];
+
+  // Metadata
+  profileCompleteness: number; // 0-100
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// ROLE PROFILE TYPES
+// ============================================
+
+export interface CustomAchievement {
+  experienceId: string;
+  achievements: string[];
+}
+
+export interface RoleProfile {
+  id: string;
+  userId: string;
+
+  // Basic Info
+  name: string;
+  description?: string;
+  icon: string;
+  color: string;
+
+  // Customizations
+  customSummary?: string;
+  selectedExperienceIds: string[];
+  experienceOrder: string[];
+  selectedSkillIds: string[];
+  skillPriority: string[];
+  selectedEducationIds: string[];
+  selectedCertificationIds: string[];
+  additionalSkills: Skill[];
+  customAchievements: CustomAchievement[];
+
+  // Metadata
+  isDefault: boolean;
+  usageCount: number;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }

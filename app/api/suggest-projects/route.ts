@@ -1,0 +1,112 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+interface Certification {
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+interface Award {
+  title: string;
+  issuer: string;
+  date: string;
+  description?: string;
+}
+
+interface SuggestProjectsRequest {
+  jobDescription: string;
+  role: string;
+  company: string;
+  certifications: Certification[];
+  awards: Award[];
+  experience: string;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: SuggestProjectsRequest = await request.json();
+    const { jobDescription, role, company, certifications, awards, experience } = body;
+
+    if (!jobDescription && !role) {
+      return NextResponse.json(
+        { error: 'Job description or role is required' },
+        { status: 400 }
+      );
+    }
+
+    // Build context about user's background
+    const userContext: string[] = [];
+
+    if (certifications?.length > 0) {
+      userContext.push(`Certifications: ${certifications.map(c => `${c.name} (${c.issuer})`).join(', ')}`);
+    }
+
+    if (awards?.length > 0) {
+      userContext.push(`Awards: ${awards.map(a => `${a.title} - ${a.issuer}`).join(', ')}`);
+    }
+
+    if (experience) {
+      userContext.push(`Experience:\n${experience}`);
+    }
+
+    const prompt = `You are helping a job applicant highlight relevant projects for a job application.
+
+JOB INFORMATION:
+- Company: ${company || 'Not specified'}
+- Role: ${role || 'Not specified'}
+- Job Description: ${jobDescription || 'Not provided'}
+
+CANDIDATE'S BACKGROUND:
+${userContext.length > 0 ? userContext.join('\n\n') : 'No background information provided'}
+
+TASK:
+Based on the job description and the candidate's background, suggest 2-3 key projects, achievements, or certifications that would be most relevant and impressive for this specific role.
+
+Format each project on its own line like this:
+- [Project/Achievement Name] - [Brief description of impact/results]
+
+Focus on:
+1. Projects that match the job requirements
+2. Quantifiable achievements when possible
+3. Skills that transfer to the new role
+
+Only output the project suggestions, nothing else. If there's not enough information, suggest generic but relevant project types for this role.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Anthropic API Error:', errorText);
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const suggestions = data.content[0].text;
+
+    return NextResponse.json({
+      success: true,
+      suggestions: suggestions.trim(),
+    });
+
+  } catch (error) {
+    console.error('Suggest Projects Error:', error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Failed to generate project suggestions',
+      },
+      { status: 500 }
+    );
+  }
+}
