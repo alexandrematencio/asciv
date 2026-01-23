@@ -2,230 +2,15 @@
 # Claude Code Project Instructions
 # This file MUST NOT be deleted or have sections removed
 # Only additions and updates are allowed
-version: "2.0"
+version: "1.0"
+backup: "Jan 22 2026 23:43:00"
 project: resume-builder
-architecture: "agentic-v2"
-last_updated: 2026-01-22
+last_updated: 2026-01-21
 ---
 
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
----
-
-# PART 1: AGENT ROUTING SYSTEM
-
-## 🚨 RÈGLE FONDAMENTALE
-
-**AUCUNE tâche ne doit être exécutée sans passer par le système de routing.**
-
-Avant de répondre à TOUTE demande :
-1. Identifier le TYPE de tâche (voir §Routing Matrix)
-2. Invoquer les agents REQUIS selon la matrice
-3. Exécuter les CHECKLISTS obligatoires (voir AGENTS.md)
-4. Passer par le GATE final approprié (voir GATES.md)
-
----
-
-## 🤔 PROTOCOLE DE CLARIFICATION
-
-### Quand demander une clarification
-
-AVANT d'exécuter une tâche, vérifier si la demande est ambiguë :
-
-| Signal d'ambiguïté | Exemple | Action |
-|-------------------|---------|--------|
-| Scope non défini | "Améliore le design" | Demander : "Quel écran/composant ?" |
-| Plusieurs interprétations | "Fixe le bouton" | Demander : "Le style, le comportement, ou le bug ?" |
-| Impact inconnu | "Refactor le code" | Demander : "Quel périmètre ? Quels fichiers ?" |
-| Contradictions potentielles | "Ajoute plus d'options" | Alerter : "Cela contredit la règle anti-fatigue (max 3 choix)" |
-| Données sensibles impliquées | "Ajoute un log pour debug" | Demander : "Quelles données ? PII possible ?" |
-
-### Format de question de clarification
-
-```markdown
-## ❓ Clarification requise
-
-Avant de procéder, j'ai besoin de préciser :
-
-1. **[Question 1]** : [Options A / B / C]
-2. **[Question 2]** : [Options ou texte libre]
-
-Une fois clarifié, je pourrai :
-- [Action prévue 1]
-- [Action prévue 2]
-```
-
-### Limites
-
-- Maximum **3 questions** de clarification par demande
-- Si plus de 3 ambiguïtés → demander à l'humain de reformuler entièrement
-- Ne jamais deviner si risque de sécurité ou impact majeur
-
----
-
-## 🛑 CHECKPOINTS DE CONSENTEMENT HUMAIN
-
-### Actions nécessitant approbation EXPLICITE
-
-| Catégorie | Action | Niveau |
-|-----------|--------|--------|
-| **Code destructif** | Suppression de fichiers, refactor majeur | 🔴 STOP - Demander |
-| **Données sensibles** | Modification auth, profile, PII | 🔴 STOP - Demander |
-| **Scope étendu** | Modifier plus de 5 fichiers | 🟠 PAUSE - Confirmer |
-| **Architecture** | Nouveau pattern, nouvelle dépendance | 🟠 PAUSE - Confirmer |
-| **UI majeure** | Nouveau composant, nouvelle page | 🟡 INFO - Valider le plan |
-| **Bug fix simple** | Correction isolée, 1-2 fichiers | ✅ AUTO - Procéder |
-
-### Format de demande d'approbation
-
-```markdown
-## 🛑 Approbation requise
-
-### Action prévue
-[Description de ce que je vais faire]
-
-### Fichiers impactés
-- [fichier 1] : [type de modification]
-- [fichier 2] : [type de modification]
-
-### Risques identifiés
-- [Risque 1] : [mitigation]
-
-### Alternatives considérées
-- [Alternative A] : [pourquoi non retenue]
-
----
-
-**Confirmer pour procéder** : Réponds "OK" ou "Procède" pour valider.
-**Modifier** : Indique ce que tu veux changer.
-**Annuler** : Réponds "Stop" ou "Annule".
-```
-
-### Règles d'autonomie
-
-| Situation | Autonomie |
-|-----------|-----------|
-| Tâche claire + scope limité + pas de PII | ✅ Procéder avec rapport |
-| Tâche claire + scope moyen | 🟡 Présenter le plan, puis procéder |
-| Tâche ambiguë | ❓ Clarifier d'abord |
-| Impact majeur ou PII | 🔴 Attendre approbation explicite |
-
----
-
-## 📋 Routing Matrix
-
-### Triggers automatiques par mots-clés
-
-| Si la demande contient... | Invoquer OBLIGATOIREMENT | Ordre |
-|---------------------------|-------------------------|-------|
-| `implement`, `code`, `add`, `create`, `build` | Dev → Security (post) | 1→2 |
-| `design`, `UI`, `component`, `button`, `card`, `modal` | UX → Brand → Dev → Security | 1→2→3→4 |
-| `harmonize`, `unify`, `consistent`, `align` | UX (inventaire) → Brand → Dev | 1→2→3 |
-| `fix`, `bug`, `error`, `debug` | Dev → Security (audit code touché) | 1→2 |
-| `user data`, `profile`, `CV`, `email`, `PII` | Security (pré-analyse) → Dev | 1→2 |
-| `API`, `endpoint`, `route`, `fetch` | Dev → Security (obligatoire) | 1→2 |
-| `log`, `console`, `debug`, `print` | Security (BLOQUANT si PII possible) | 1 |
-| `feature`, `story`, `epic`, `PRD` | PRD → UX → Brand | 1→2→3 |
-| `refactor`, `clean`, `optimize` | Dev → Security → UX (si UI) | 1→2→3 |
-| `style`, `color`, `font`, `spacing`, `animation` | Brand → Dev | 1→2 |
-| `form`, `input`, `validation` | UX → Dev → Security | 1→2→3 |
-| `export`, `download`, `PDF`, `file` | Security (pré) → Dev → Security (post) | 1→2→3 |
-
-### Triggers par type de fichier modifié
-
-| Si le code touche... | Invoquer OBLIGATOIREMENT |
-|---------------------|-------------------------|
-| `*.tsx` (composants) | UX checklist + Security audit |
-| `*/api/*` (routes API) | Security audit BLOQUANT |
-| `*Context*.tsx` | Security + UX |
-| `lib/*-db.ts` | Security audit BLOQUANT |
-| `console.log` ajouté | Security BLOQUANT - vérifier PII |
-| Tout fichier avec `user`, `profile`, `auth` | Security pré + post |
-
----
-
-## 🔄 Protocole de coordination
-
-### Format de réponse obligatoire
-
-Toute réponse impliquant du code ou du design DOIT inclure :
-
-```markdown
-## Routing Report
-- Agents invoqués : [liste]
-- Checklists complétées : [✅/❌ par agent]
-- Gate final : [PASS/FAIL + motif si fail]
-
-## [Contenu de la réponse]
-
-## Conformité
-| Critère | Status |
-|---------|--------|
-| Security audit | ✅/❌ |
-| UX states couverts | ✅/❌ |
-| Brand alignment | ✅/❌ |
-| PII check | ✅/❌ |
-```
-
----
-
-## 🚫 HARD BLOCKS
-
-Ces situations BLOQUENT toute progression jusqu'à résolution :
-
-| Situation | Action |
-|-----------|--------|
-| `console.log` avec données user possibles | STOP → Security audit avant merge |
-| Composant UI sans liste d'états | STOP → UX doit lister tous les états |
-| API route sans validation input | STOP → Security doit valider |
-| Modification auth/profile sans Security | STOP → Security pré-requis |
-| "Harmoniser" sans inventaire préalable | STOP → UX doit scanner tous les composants similaires |
-
----
-
-## 📁 Fichiers de référence agents
-
-Lire OBLIGATOIREMENT avant toute tâche :
-- `AGENTS.md` - Définitions agents + checklists
-- `GATES.md` - Protocoles de validation finale
-- `PRD.md` - Vision produit et priorités
-- `DESIGN-SYSTEM.md` - Priorités UX et standards composants
-- `BRAND-IDENTITY.md` - Identité visuelle et ton
-
-**Note** : Ne pas confondre DESIGN-SYSTEM.md (UX) et BRAND-IDENTITY.md (visuel).
-
----
-
-## 🎯 Priorités du projet
-
-### UX (ordre strict)
-1. Fiabilité & professionnalisme (5 premières secondes)
-2. Anti-fatigue décisionnelle & anti-regret
-3. Empowerment & contrôle utilisateur
-4. Inclusivité & accessibilité
-5. Anti-addiction & anti-manipulation
-
-### Brand (ordre strict)
-1. Moderne
-2. Professionnel
-3. Minimaliste
-4. Calme
-5. Raffiné
-6. Premium
-7. Bienveillant
-
-### Security (non-négociables)
-- GDPR compliance
-- Zero PII dans logs/console
-- RLS sur toutes les tables Supabase
-- Validation input sur toutes les API routes
-- Consent explicite pour traitement AI
-
----
-
-# PART 2: PROJECT DOCUMENTATION
 
 ## Commands
 
@@ -415,19 +200,12 @@ Create Application → Track status (draft → sent → interview → offer)
 
 ---
 
-## External Integrations
-
-| Tool | Mapping | Notes |
-|------|---------|-------|
-| **Notion** | Teamspace "JOB TRACKER" = this app (resume-builder) | MCP via `@notionhq/notion-mcp-server`, config in `.mcp.json` |
-
 ## Environment Variables
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ANTHROPIC_API_KEY=
-NOTION_API_KEY=              # Notion integration "Claude-CareerTech" (read/write/insert)
 ```
 
 ---

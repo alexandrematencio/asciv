@@ -156,7 +156,8 @@ The Job Intelligence Engine helps users evaluate job opportunities against their
 | P1-03 | Job seeker | Set my remote work preference | Work mode mismatches are surfaced | Must |
 | P1-04 | Job seeker | Configure working hours range | Part-time vs full-time is clear | Should |
 | P1-05 | Job seeker | Select preferred perks | Benefit alignment is scored | Could |
-| P1-06 | Job seeker | Adjust scoring weights | My priorities are reflected in scores | Should |
+| P1-06 | Job seeker | Adjust scoring weight
+s | My priorities are reflected in scores | Should |
 
 #### Epic 2: Job Import & Parsing
 
@@ -516,3 +517,4 @@ User Profile (Supabase)     Job Description (User Input)
 
 *Document maintained by the CareerTech Product Team*
 *Last updated: January 2026*
+
