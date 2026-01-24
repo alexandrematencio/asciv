@@ -417,8 +417,8 @@ The app has 3 main sections accessible via a bottom nav bar:
 - Interview tracking (excludes offer/rejected/closed from interview filter)
 
 ### Modals
-- `CVDetailModal.tsx` - View/edit application details, CV versions, cover letters
-- `NewApplicationModal.tsx` - Create new applications
+- `CVDetailModal.tsx` - View/edit application details, CV versions, cover letters, "Analyze Matching" button (bridges to JobImportModal in from-application mode)
+- `NewApplicationModal.tsx` - Create new applications (with role profile save prompt on step 3 edits)
 - `CoverLetterModal.tsx` - Cover letter generation and editing
 
 ### Editors
@@ -431,13 +431,13 @@ The app has 3 main sections accessible via a bottom nav bar:
 - `app/jobs/[id]/page.tsx` - Job detail page with full analysis view
 - `app/components/jobs/JobOfferCard.tsx` - Job card with score badge, meta info, actions (analyze, save, dismiss)
 - `app/components/jobs/JobOffersList.tsx` - Paginated job list with filters
-- `app/components/jobs/JobImportModal.tsx` - Import job via paste or URL
-- `app/components/jobs/JobIntelligenceView.tsx` - Full match analysis display (score, skills, insights)
+- `app/components/jobs/JobImportModal.tsx` - Import job via paste, URL, or from-application mode (pre-fills from existing application)
+- `app/components/jobs/JobIntelligenceView.tsx` - Full match analysis display (score, skills detail, perks detail, insights)
 - `app/components/jobs/JobPreferencesForm.tsx` - User preferences (salary, location, remote, perks, weights)
 
 ### Services
 - `lib/job-filter-service.ts` - Scoring algorithm, hard blocker detection, weight calculation
-- `lib/job-intelligence-db.ts` - Supabase CRUD for job_offers, job_preferences, job_analysis_feedback
+- `lib/job-intelligence-db.ts` - Supabase CRUD for job_offers, job_preferences, job_analysis_feedback, getJobOfferByApplicationId()
 
 ---
 
@@ -468,9 +468,23 @@ User imports job (paste/URL) → /api/parse-job-description → structured JobOf
                                                            ↓
                               /api/analyze-job ← JobOffer + UserProfile + Preferences
                                                            ↓
-JobIntelligenceView shows: match score, skills %, blockers, AI insights
+JobIntelligenceView shows: match score, skills detail, perks detail, blockers, AI insights
                                                            ↓
 User decides: Save / Dismiss / Create Application
+```
+
+### Application → Matching Flow
+```
+User in CVDetailModal (application with job description)
+                          ↓
+Click "Analyze Matching" → checks if JobOffer already exists (via source_application_id)
+                          ↓
+If exists → redirect to /jobs/{existingJobId}
+If not → JobImportModal opens in from-application mode (pre-filled)
+                          ↓
+User reviews/edits → "Confirm & Analyze" → creates JobOffer with source_application_id
+                          ↓
+Auto-triggers analysis → redirect to /jobs/{newJobId}
 ```
 
 ---
@@ -534,6 +548,9 @@ Calculated in `lib/profile-db.ts` with weighted scoring:
 - ✅ Application Tracking Pipeline (Phase 1)
 - ✅ Role Profiles (Phase 1)
 - ✅ Job Intelligence Engine (Phase 2) — matching, scoring, blockers, AI insights, preferences
+- ✅ Application → Matching Bridge — one-click analysis from existing applications
+- ✅ Match Statistics Redesign — skills & perks detail breakdown (matched/missing/extra)
+- ✅ Role Profile Save Prompt — detect edits in new application flow, offer to update role profile
 
 ### Future Roadmap
 1. **Job Scraping Integration** - Auto-import from LinkedIn, Indeed, etc.

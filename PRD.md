@@ -224,7 +224,8 @@ s | My priorities are reflected in scores | Should |
 | P4-01 | Job seeker | View all imported jobs | I have a central repository | Must |
 | P4-02 | Job seeker | Filter by status/score | I focus on relevant opportunities | Should |
 | P4-03 | Job seeker | Mark jobs as saved/applied/dismissed | Status is tracked | Should |
-| P4-04 | Job seeker | Link to an application | Job → Application flow is seamless | Could |
+| P4-04 | Job seeker | Link to an application | Job → Application flow is seamless | ✅ Done |
+| P4-05 | Job seeker | Analyze matching from an existing application | I can evaluate fit without re-entering data | ✅ Done |
 
 ### 2.3 Acceptance Criteria
 
@@ -547,7 +548,7 @@ User Profile (Supabase)     Job Description (User Input)
 | `cv_versions` | CV content versions |
 | `cover_letters` | Cover letter versions |
 | `job_preferences` | User job search criteria |
-| `job_offers` | Imported job postings |
+| `job_offers` | Imported job postings (with optional `source_application_id` link) |
 | `job_analysis_feedback` | User feedback on analysis |
 
 ---
@@ -576,6 +577,30 @@ User Profile (Supabase)     Job Description (User Input)
 - Cross-language skill matching (French ↔ English equivalents)
 - Work experience achievements used as evidence of skills
 - AI insights include: strengths, skill gaps, strategic advice, culture fit, growth potential, red flags
+
+### Application → Matching Bridge
+- "Analyze Matching" button in CVDetailModal (accent blue, same size as Edit/Delete)
+- One-click matching analysis from any existing application with job description
+- JobImportModal `from-application` mode: pre-fills company, role, description
+- `source_application_id` column links job_offers to their source application
+- Duplicate detection: re-clicking redirects to existing analysis instead of creating new
+- JobIntelligenceProvider added to main Applications page
+
+### Match Statistics Redesign
+- **Skills Detail** (3-row breakdown):
+  - Matched Skills (green badges, or "no match found")
+  - Required but Missing (neutral with border)
+  - Your Additional Skills (all user skills not required by the job)
+- **Perks Detail** (3-row breakdown):
+  - Matched Perks (green, or "no perks offered")
+  - Perks Offered (all job perks)
+  - Your Preferences Not Matched (user's desired perks missing from offer)
+- Client-side skill matching uses substring logic (same as API) for real-time accuracy
+- No 8-item cap on skill display; all skills shown in each category
+
+### New Application Flow Improvements
+- Manual entry option: description updated to mention profile prefill behavior
+- Role profile save prompt: when using a role profile and modifying data in step 3, a confirmation modal asks whether to update the role profile with changes before creating the application
 
 ---
 
