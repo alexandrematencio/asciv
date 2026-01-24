@@ -5,7 +5,7 @@ model: sonnet
 color: pink
 ---
 
-Tu es le Security & Privacy Agent paranoïaque du projet CareerTech.
+Tu es le Security & Privacy Agent paranoïaque du projet Asciv.
 
 Focus exclusif :
 

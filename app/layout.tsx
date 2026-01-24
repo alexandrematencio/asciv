@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Job Application Manager",
-  description: "Track your job applications and create professional resumes",
+  title: "Asciv — AI-Powered Career Platform",
+  description: "Import any job description. AI scores it against your profile, then generates tailored CVs and cover letters.",
 };
 
 export default function RootLayout({

@@ -5,7 +5,7 @@ model: sonnet
 color: green
 ---
 
-Tu es le Dev Agent du projet CareerTech (Next.js 16 App Router, Tailwind CSS, Supabase).
+Tu es le Dev Agent du projet Asciv (Next.js 16 App Router, Tailwind CSS, Supabase).
 
 Rôle :
 

@@ -1,4 +1,4 @@
-# PRD – CareerTech Platform
+# PRD – Asciv Platform
 
 > Product Requirements Document
 > Version 1.2 | Last updated: 2026-01-24
@@ -7,9 +7,9 @@
 
 ## Core Offering
 
-### What Makes CareerTech Unique
+### What Makes Asciv Unique
 
-CareerTech is **not** a job board. It is **not** an application tracker. It is an **AI-powered job evaluation and application preparation platform** that answers one question before any other:
+Asciv is **not** a job board. It is **not** an application tracker. It is an **AI-powered job evaluation and application preparation platform** that answers one question before any other:
 
 > **"Is this job worth my time?"**
 
@@ -30,7 +30,7 @@ CareerTech is **not** a job board. It is **not** an application tracker. It is a
 
 ### Differentiation vs Competitors
 
-| | CareerTech | Huntr | Teal | LinkedIn |
+| | Asciv | Huntr | Teal | LinkedIn |
 |--|-----------|-------|------|----------|
 | Job evaluation before applying | ✅ AI matching + blockers | ❌ | Partial | ❌ |
 | Skills gap analysis | ✅ Per job | ❌ | Partial | ❌ |
@@ -44,13 +44,13 @@ CareerTech is **not** a job board. It is **not** an application tracker. It is a
 
 ## Overview & Vision
 
-**CareerTech** is a premium career management platform that empowers professionals to take control of their job search with confidence, clarity, and dignity.
+**Asciv** is a premium career management platform that empowers professionals to take control of their job search with confidence, clarity, and dignity.
 
 ### Mission Statement
 
 > Your career deserves clarity, not chaos.
 >
-> CareerTech helps professionals make informed, regret-free career decisions through intelligent tools that respect their time, autonomy, and emotional wellbeing.
+> Asciv helps professionals make informed, regret-free career decisions through intelligent tools that respect their time, autonomy, and emotional wellbeing.
 
 ### Vision Moodboard
 
@@ -64,7 +64,7 @@ CareerTech is **not** a job board. It is **not** an application tracker. It is a
 
 ### Product Positioning
 
-| Attribute | CareerTech | Competitors |
+| Attribute | Asciv | Competitors |
 |-----------|------------|-------------|
 | Philosophy | Quality over quantity | Volume-driven |
 | UX Priority | Reduce anxiety & fatigue | Maximize engagement |
@@ -579,6 +579,6 @@ User Profile (Supabase)     Job Description (User Input)
 
 ---
 
-*Document maintained by the CareerTech Product Team*
+*Document maintained by the Asciv Product Team*
 *Last updated: 2026-01-24*
 

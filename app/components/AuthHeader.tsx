@@ -16,13 +16,13 @@ export default function AuthHeader() {
         <Link href="/landing" className="flex items-center gap-3">
           <Image
             src="/logo.svg"
-            alt="AppTracker"
+            alt="Asciv"
             width={40}
             height={20}
             className="h-5 w-auto"
           />
           <span className="text-xl font-semibold text-primary-900 dark:text-primary-50">
-            AppTracker
+            Asciv
           </span>
         </Link>
 

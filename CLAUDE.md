@@ -487,7 +487,7 @@ User decides: Save / Dismiss / Create Application
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ANTHROPIC_API_KEY=
-NOTION_API_KEY=              # Notion integration "Claude-CareerTech" (read/write/insert)
+NOTION_API_KEY=              # Notion integration "Claude-Asciv" (read/write/insert)
 ```
 
 ---

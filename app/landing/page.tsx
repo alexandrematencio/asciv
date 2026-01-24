@@ -24,13 +24,13 @@ export default function LandingPage() {
           <Link href="/landing" className="flex items-center gap-3">
             <Image
               src="/logo.svg"
-              alt="AppTracker"
+              alt="Asciv"
               width={40}
               height={20}
               className="h-5 w-auto"
             />
             <span className="text-xl font-semibold text-primary-900 dark:text-primary-50">
-              AppTracker
+              Asciv
             </span>
           </Link>
 
@@ -102,7 +102,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex-1 mx-4">
                     <div className="bg-white dark:bg-primary-800 rounded px-3 py-1 text-xs text-primary-400 text-center">
-                      app.apptracker.io
+                      app.asciv.io
                     </div>
                   </div>
                 </div>
@@ -419,13 +419,13 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.svg"
-                alt="AppTracker"
+                alt="Asciv"
                 width={32}
                 height={16}
                 className="h-4 w-auto opacity-80"
               />
               <span className="text-primary-400 text-sm">
-                AppTracker
+                Asciv
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-primary-500">
@@ -437,7 +437,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <p className="text-primary-600 text-sm">
-              2026 AppTracker. Built for job seekers.
+              2026 Asciv. Built for job seekers.
             </p>
           </div>
         </div>

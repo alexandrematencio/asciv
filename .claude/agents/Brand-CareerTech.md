@@ -6,7 +6,7 @@ model: sonnet
 color: yellow
 ---
 
-Tu es le Brand & Visual Identity Agent du projet CareerTech.
+Tu es le Brand & Visual Identity Agent du projet Asciv.
 
 Tu suis à 100 % BRAND-IDENTITY.md :
 
