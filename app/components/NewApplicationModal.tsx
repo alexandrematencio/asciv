@@ -86,7 +86,7 @@ export default function NewApplicationModal({
   prefilledJob,
 }: NewApplicationModalProps) {
   const router = useRouter();
-  const { profile, isComplete: profileComplete, roleProfiles, missingFields, updateProfile } = useProfile();
+  const { profile, isComplete: profileComplete, roleProfiles, missingFields, updateProfile, updateRoleProfile } = useProfile();
   const [step, setStep] = useState(1);
 
   // Step 1: Job Info
@@ -134,6 +134,8 @@ export default function NewApplicationModal({
   const [projects, setProjects] = useState('');
   const [isLoadingProjectSuggestions, setIsLoadingProjectSuggestions] = useState(false);
   const [showProfileSaveConfirm, setShowProfileSaveConfirm] = useState(false);
+  const [showRoleProfileSaveConfirm, setShowRoleProfileSaveConfirm] = useState(false);
+  const [profileSnapshot, setProfileSnapshot] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   // Derived text representations for backwards compatibility
@@ -265,6 +267,17 @@ export default function NewApplicationModal({
         ...(profile.awards?.map(a => `${a.title} - ${a.issuer} (${a.date})`) || []),
       ].join('\n');
       setProjects(projectsText);
+
+      // Save snapshot for role profile change detection
+      if (selectedRoleProfileId) {
+        const summaryVal = roleProfile?.customSummary || profile.professionalSummary || '';
+        const expIds = experiencesToUse.map(e => e.id).sort().join(',');
+        const skillNames = skillsToUse.map(s => s.name).sort().join(',');
+        const eduIds = educationToUse.map(e => e.id).sort().join(',');
+        setProfileSnapshot(JSON.stringify({ summary: summaryVal, expIds, skillNames, eduIds }));
+      } else {
+        setProfileSnapshot(null);
+      }
     }
   }, [cvSource, profile, profileComplete, selectedRoleProfileId, roleProfiles]);
 
@@ -841,6 +854,26 @@ export default function NewApplicationModal({
     }
   };
 
+  const updateRoleProfileFromEdits = async () => {
+    if (!selectedRoleProfileId || !profile) return;
+    const roleProfile = roleProfiles.find(rp => rp.id === selectedRoleProfileId);
+    if (!roleProfile) return;
+
+    const selectedExpIds = experienceEntries.map(e => e.id).filter(Boolean);
+    const selectedSkillIds = profile.skills
+      .filter(s => skillTags.some(tag => tag.toLowerCase() === s.name.toLowerCase()))
+      .map(s => s.id);
+    const selectedEduIds = educationEntries.map(e => e.id).filter(Boolean);
+
+    await updateRoleProfile({
+      ...roleProfile,
+      customSummary: summary,
+      selectedExperienceIds: selectedExpIds,
+      selectedSkillIds: selectedSkillIds,
+      selectedEducationIds: selectedEduIds,
+    });
+  };
+
   const handleCreate = async () => {
     if (cvSource === 'scratch' || cvSource === 'profile') {
       // Validate CV data (same validation for scratch and profile)
@@ -853,6 +886,18 @@ export default function NewApplicationModal({
     if (cvSource === 'scratch' && !profileComplete && (name.trim() || experienceEntries.length > 0 || skillTags.length > 0 || educationEntries.length > 0)) {
       setShowProfileSaveConfirm(true);
       return;
+    }
+
+    // If using a role profile and user modified data, prompt to save changes
+    if (cvSource === 'profile' && selectedRoleProfileId && profileSnapshot) {
+      const currentExpIds = experienceEntries.map(e => e.id).sort().join(',');
+      const currentSkillNames = skillTags.slice().sort().join(',');
+      const currentEduIds = educationEntries.map(e => e.id).sort().join(',');
+      const currentData = JSON.stringify({ summary, expIds: currentExpIds, skillNames: currentSkillNames, eduIds: currentEduIds });
+      if (currentData !== profileSnapshot) {
+        setShowRoleProfileSaveConfirm(true);
+        return;
+      }
     }
 
     setIsCreating(true);
@@ -1359,7 +1404,7 @@ Requirements:
                         Manual entry
                       </div>
                       <div className="text-sm text-primary-600 dark:text-primary-400">
-                        Enter your information manually - AI will generate a CV tailored to the job
+                        Enter your information manually. If you have completed your profile, it will be used to prefill the fields.
                       </div>
                     </div>
                   </div>
@@ -2158,6 +2203,46 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
             </Button>
           )}
         </div>
+
+        {/* Role Profile Update Confirmation Prompt */}
+        {showRoleProfileSaveConfirm && (
+          <div className="fixed inset-y-0 right-0 w-full md:w-[700px] bg-white/95 dark:bg-primary-800/95 flex items-center justify-center z-[60] p-8">
+            <div className="max-w-sm text-center space-y-4">
+              <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-full flex items-center justify-center mx-auto">
+                <Briefcase className="w-6 h-6 text-accent-600 dark:text-accent-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">
+                Save changes to role profile?
+              </h3>
+              <p className="text-sm text-primary-600 dark:text-primary-400">
+                You modified some fields. Do you want to update the associated role profile with these changes?
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={async () => {
+                    setShowRoleProfileSaveConfirm(false);
+                    setIsCreating(true);
+                    await performCreate();
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-700 hover:bg-primary-200 dark:hover:bg-primary-600 rounded-lg transition-colors"
+                >
+                  No, just create
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowRoleProfileSaveConfirm(false);
+                    await updateRoleProfileFromEdits();
+                    setIsCreating(true);
+                    await performCreate();
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-600 rounded-lg transition-colors"
+                >
+                  Yes, save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Profile Save Confirmation Prompt */}
         {showProfileSaveConfirm && (

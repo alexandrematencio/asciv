@@ -1,20 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { X, FileText, Link as LinkIcon, Loader2, AlertCircle, CheckCircle, Sparkles, Globe } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, FileText, Link as LinkIcon, Loader2, AlertCircle, CheckCircle, Sparkles, Globe, Info } from 'lucide-react';
 import { useJobIntelligence } from '@/app/contexts/JobIntelligenceContext';
-import type { JobOffer } from '@/app/types';
+import type { JobOffer, Application } from '@/app/types';
 import AIConsentModal from './AIConsentModal';
 
 interface JobImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onJobImported: (job: JobOffer) => void;
+  mode?: 'default' | 'from-application';
+  sourceApplication?: Application;
+  onSuccess?: (jobId: string) => void;
 }
 
 type ImportMode = 'paste' | 'url';
 
-export default function JobImportModal({ isOpen, onClose, onJobImported }: JobImportModalProps) {
+export default function JobImportModal({ isOpen, onClose, onJobImported, mode: importMode = 'default', sourceApplication, onSuccess }: JobImportModalProps) {
   const { parseJobDescription, createJobOffer, analyzeJobOffer, analyzing, preferences, updatePreferences } = useJobIntelligence();
   const [mode, setMode] = useState<ImportMode>('paste');
   const [description, setDescription] = useState('');
@@ -30,6 +33,22 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
   const [editedTitle, setEditedTitle] = useState('');
   const [editedCompany, setEditedCompany] = useState('');
   const [editedLocation, setEditedLocation] = useState('');
+
+  // Pre-fill from application data when in from-application mode
+  useEffect(() => {
+    if (importMode === 'from-application' && sourceApplication) {
+      const prefilled: Partial<JobOffer> = {
+        title: sourceApplication.role,
+        company: sourceApplication.company,
+        description: sourceApplication.jobDescription,
+      };
+      setParsedData(prefilled);
+      setEditedTitle(sourceApplication.role || '');
+      setEditedCompany(sourceApplication.company || '');
+      setDescription(sourceApplication.jobDescription || '');
+      setStep('preview');
+    }
+  }, [importMode, sourceApplication]);
 
   if (!isOpen) return null;
 
@@ -106,6 +125,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
       location: editedLocation || parsedData.location,
       description: description,
       sourceUrl: mode === 'url' ? url : undefined,
+      sourceApplicationId: importMode === 'from-application' ? sourceApplication?.id : undefined,
       status: 'new',
     };
 
@@ -122,6 +142,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
           console.error('Auto-analysis failed:', err);
         }
         onJobImported(savedJob);
+        onSuccess?.(savedJob.id);
         handleClose();
       } else {
         // User hasn't consented yet - show consent modal
@@ -149,6 +170,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
         console.error('Auto-analysis failed:', err);
       }
       onJobImported(pendingJobForAnalysis);
+      onSuccess?.(pendingJobForAnalysis.id);
       handleClose();
     }
   };
@@ -159,6 +181,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
     // Job is already saved, just close without analysis
     if (pendingJobForAnalysis) {
       onJobImported(pendingJobForAnalysis);
+      onSuccess?.(pendingJobForAnalysis.id);
       handleClose();
     }
   };
@@ -179,8 +202,12 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
   };
 
   const handleBack = () => {
-    setStep('input');
-    setError(null);
+    if (importMode === 'from-application') {
+      handleClose();
+    } else {
+      setStep('input');
+      setError(null);
+    }
   };
 
   return (
@@ -278,12 +305,21 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
 
           {step === 'preview' && parsedData && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 bg-success-50 dark:bg-success-900/30 border border-success-200 dark:border-success-800 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-success-500 flex-shrink-0" />
-                <p className="text-sm text-success-700 dark:text-success-300">
-                  Job description parsed successfully. Review and edit the extracted data below.
-                </p>
-              </div>
+              {importMode === 'from-application' && sourceApplication ? (
+                <div className="flex items-center gap-2 p-3 bg-info-50 dark:bg-info-900/20 border border-info-200 dark:border-info-800 rounded-lg">
+                  <Info className="w-5 h-5 text-info-500 flex-shrink-0" />
+                  <p className="text-sm text-info-700 dark:text-info-300">
+                    Job data from application: <strong>{sourceApplication.company}</strong> - {sourceApplication.role}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 bg-success-50 dark:bg-success-900/30 border border-success-200 dark:border-success-800 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  <p className="text-sm text-success-700 dark:text-success-300">
+                    Job description parsed successfully. Review and edit the extracted data below.
+                  </p>
+                </div>
+              )}
 
               {/* Editable Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -485,7 +521,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                 className="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
-                Save and Analyze
+                {importMode === 'from-application' ? 'Confirm & Analyze' : 'Save and Analyze'}
               </button>
             </>
           )}

@@ -221,6 +221,21 @@ export async function loadJobOffer(id: string): Promise<JobOffer | null> {
   return mapDbToJobOffer(data);
 }
 
+export async function getJobOfferByApplicationId(applicationId: string): Promise<JobOffer | null> {
+  const supabase = createClient();
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const { data } = await supabase
+    .from('job_offers')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('source_application_id', applicationId)
+    .maybeSingle();
+
+  return data ? mapDbToJobOffer(data) : null;
+}
+
 export async function saveJobOffer(offer: Partial<JobOffer>): Promise<JobOffer | null> {
   const supabase = createClient();
   const userId = await getCurrentUserId();
@@ -259,6 +274,7 @@ export async function saveJobOffer(offer: Partial<JobOffer>): Promise<JobOffer |
     perks: offer.perks || [],
     source_url: offer.sourceUrl || null,
     source_platform: offer.sourcePlatform || null,
+    source_application_id: offer.sourceApplicationId || null,
     is_blocked: offer.isBlocked ?? false,
     block_reasons: offer.blockReasons || [],
     skills_match_percent: toIntOrNull(offer.skillsMatchPercent),
@@ -431,6 +447,7 @@ function mapDbToJobOffer(data: any): JobOffer {
     perks: data.perks || [],
     sourceUrl: data.source_url,
     sourcePlatform: data.source_platform,
+    sourceApplicationId: data.source_application_id || undefined,
     isBlocked: data.is_blocked ?? false,
     blockReasons: data.block_reasons || [],
     skillsMatchPercent: data.skills_match_percent,

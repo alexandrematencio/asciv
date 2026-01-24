@@ -25,6 +25,8 @@ import {
 import type { JobOffer, AIInsights } from '@/app/types';
 import { PERK_LABELS } from '@/app/types';
 import { interpretScore } from '@/lib/job-filter-service';
+import { useProfile } from '@/app/contexts/ProfileContext';
+import { useJobIntelligence } from '@/app/contexts/JobIntelligenceContext';
 
 interface JobIntelligenceViewProps {
   job: JobOffer;
@@ -48,6 +50,40 @@ export default function JobIntelligenceView({
   analyzing = false,
 }: JobIntelligenceViewProps) {
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const { profile } = useProfile();
+  const { preferences } = useJobIntelligence();
+
+  // Compute skill categories client-side from requiredSkills + profile
+  // Uses substring matching (same logic as /api/analyze-job)
+  const userSkillNames = profile?.skills?.map(s => s.name) || [];
+  const allRequiredSkills = [...job.requiredSkills, ...job.niceToHaveSkills];
+
+  const profileTexts: string[] = [
+    ...(profile?.skills?.map(s => s.name.toLowerCase()) || []),
+    ...(profile?.workExperience?.map(exp => exp.title.toLowerCase()) || []),
+    ...(profile?.workExperience?.flatMap(exp => exp.achievements?.map(a => a.toLowerCase()) || []) || []),
+  ];
+
+  const skillMatchesProfile = (skill: string) => {
+    const normalized = skill.toLowerCase();
+    return profileTexts.some(text => text.includes(normalized) || normalized.includes(text));
+  };
+
+  const matchedSkills = allRequiredSkills.filter(skill => skillMatchesProfile(skill));
+  const missingSkills = allRequiredSkills.filter(skill => !skillMatchesProfile(skill));
+  const extraSkills = userSkillNames.filter(name =>
+    !allRequiredSkills.some(rs => {
+      const a = rs.toLowerCase();
+      const b = name.toLowerCase();
+      return a.includes(b) || b.includes(a);
+    })
+  );
+
+  // Compute perk categories
+  const userPreferredPerks = preferences?.preferredPerks || [];
+  const jobOfferedPerks = job.perks || [];
+  const matchedPerks = jobOfferedPerks.filter(p => userPreferredPerks.includes(p));
+  const unmatchedUserPerks = userPreferredPerks.filter(p => !jobOfferedPerks.includes(p));
 
   const scoreInfo = job.overallScore !== null ? interpretScore(job.overallScore) : null;
 
@@ -358,6 +394,7 @@ export default function JobIntelligenceView({
           <h2 className="text-lg font-semibold text-primary-900 dark:text-primary-50 mb-4">
             Match Statistics
           </h2>
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {job.skillsMatchPercent !== null && (
               <div>
@@ -393,39 +430,111 @@ export default function JobIntelligenceView({
             )}
           </div>
 
-          {/* Matched Skills */}
-          {job.matchedSkills && job.matchedSkills.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-primary-500 dark:text-primary-400 mb-2">Matched Skills</p>
-              <div className="flex flex-wrap gap-2">
-                {job.matchedSkills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 rounded-lg text-xs font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Skills Detail */}
+          <div className="mt-5 space-y-3">
+            <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-300">Skills Detail</h3>
 
-          {/* Missing Skills */}
-          {job.missingSkills && job.missingSkills.length > 0 && (
-            <div className="mt-3">
-              <p className="text-sm text-primary-500 dark:text-primary-400 mb-2">Missing Skills</p>
-              <div className="flex flex-wrap gap-2">
-                {job.missingSkills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-300 rounded-lg text-xs font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
+            {/* Row 1: Matched Skills */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Matched Skills</p>
+              {matchedSkills.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {matchedSkills.map((skill, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 rounded text-xs font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">no match found</p>
+              )}
             </div>
-          )}
+
+            {/* Row 2: Missing Skills */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Required but Missing</p>
+              {missingSkills.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {missingSkills.map((skill, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-primary-100 dark:bg-primary-700/30 text-primary-600 dark:text-primary-300 border border-primary-300 dark:border-primary-600 rounded text-xs font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">none — you cover all required skills</p>
+              )}
+            </div>
+
+            {/* Row 3: Extra Skills */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Your Additional Skills</p>
+              {extraSkills.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {extraSkills.map((skill, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-primary-50 dark:bg-primary-800/50 text-primary-500 dark:text-primary-400 rounded text-xs font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">none</p>
+              )}
+            </div>
+          </div>
+
+          {/* Perks Detail */}
+          <div className="mt-5 space-y-3">
+            <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-300">Perks Detail</h3>
+
+            {/* Row 1: Matched Perks */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Matched Perks</p>
+              {matchedPerks.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {matchedPerks.map((perk, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-300 rounded text-xs font-medium">
+                      {PERK_LABELS[perk] || perk}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">no perks offered</p>
+              )}
+            </div>
+
+            {/* Row 2: Perks Offered */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Perks Offered</p>
+              {jobOfferedPerks.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {jobOfferedPerks.map((perk, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-primary-100 dark:bg-primary-700/30 text-primary-600 dark:text-primary-300 rounded text-xs font-medium">
+                      {PERK_LABELS[perk] || perk}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">no perks</p>
+              )}
+            </div>
+
+            {/* Row 3: User's Unmatched Perks */}
+            <div>
+              <p className="text-xs text-primary-500 dark:text-primary-400 mb-1.5">Your Preferences Not Matched</p>
+              {unmatchedUserPerks.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {unmatchedUserPerks.map((perk, index) => (
+                    <span key={index} className="px-2 py-0.5 bg-primary-50 dark:bg-primary-800/50 text-primary-500 dark:text-primary-400 rounded text-xs font-medium">
+                      {PERK_LABELS[perk] || perk}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-primary-400 dark:text-primary-500 italic">all your preferred perks are offered</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

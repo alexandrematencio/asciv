@@ -10,6 +10,7 @@ import CVDetailModal from '@/app/components/CVDetailModal';
 import { ThemeToggle } from '@/app/components/ThemeToggle';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useProfile } from '@/app/contexts/ProfileContext';
+import { JobIntelligenceProvider } from '@/app/contexts/JobIntelligenceContext';
 import {
   Template,
   Application,
@@ -1363,6 +1364,7 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
   const decisionResponses = applications.filter(a => a.tracking.outcome).length;
 
   return (
+    <JobIntelligenceProvider>
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors duration-200">
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <NewApplicationModal
@@ -2021,5 +2023,6 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
         />
       )}
     </div>
+    </JobIntelligenceProvider>
   );
 }

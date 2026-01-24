@@ -54,9 +54,12 @@ export default function SignUpPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-4">Check your email</h2>
-              <p className="text-slate-400 mb-6">
+              <p className="text-slate-400 mb-3">
                 We&apos;ve sent you a confirmation link to <span className="text-white font-medium">{email}</span>.
                 Please click the link to activate your account.
+              </p>
+              <p className="text-slate-500 text-sm mb-6">
+                The email may take up to 15 minutes to arrive depending on your provider. Check your spam folder if needed.
               </p>
               <Link
                 href="/login"

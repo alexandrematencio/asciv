@@ -430,6 +430,7 @@ export interface JobOffer {
   // Source
   sourceUrl: string | null;
   sourcePlatform: string | null;
+  sourceApplicationId?: string;
 
   // Analysis
   isBlocked: boolean;

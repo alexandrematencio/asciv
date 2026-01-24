@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS job_offers (
   -- Source
   source_url TEXT,
   source_platform TEXT,
+  source_application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
 
   -- Analysis results
   is_blocked BOOLEAN DEFAULT FALSE,
@@ -209,6 +210,11 @@ CREATE TABLE IF NOT EXISTS job_offers (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   analyzed_at TIMESTAMPTZ
 );
+
+-- Index for looking up job offers linked to an application
+CREATE INDEX idx_job_offers_source_application_id
+ON job_offers(source_application_id)
+WHERE source_application_id IS NOT NULL;
 
 -- Job Analysis Feedback (for feedback loop)
 CREATE TABLE IF NOT EXISTS job_analysis_feedback (

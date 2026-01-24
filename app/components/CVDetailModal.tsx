@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Crown, Zap, Flag, Rocket, Plus, FilePlus, X, Pencil, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Crown, Zap, Flag, Rocket, Plus, FilePlus, X, Pencil, Trash2, Target } from 'lucide-react';
 import { Application, CVVersion, CoverLetter, CoverLetterStyle, RecipientInfo } from '../types';
 import CVEditor from './CVEditor';
 import CoverLetterModal from './CoverLetterModal';
 import CoverLetterEditor from './CoverLetterEditor';
 import CVRenderer, { CVData } from './CVRenderer';
+import JobImportModal from './jobs/JobImportModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useProfile } from '../contexts/ProfileContext';
+import { getJobOfferByApplicationId } from '@/lib/job-intelligence-db';
 
 const STYLE_INFO = {
   french_formal: {
@@ -64,6 +67,24 @@ export default function CVDetailModal({
 }: CVDetailModalProps) {
   // Get user profile for pre-filling age
   const { profile } = useProfile();
+  const router = useRouter();
+
+  // Job matching state
+  const [showJobImportModal, setShowJobImportModal] = useState(false);
+  const [checkingExistingJob, setCheckingExistingJob] = useState(false);
+  const canAnalyzeMatching = application.jobDescription && application.jobDescription.length > 0;
+
+  const handleAnalyzeMatching = async () => {
+    setCheckingExistingJob(true);
+    const existing = await getJobOfferByApplicationId(application.id);
+    setCheckingExistingJob(false);
+    if (existing) {
+      router.push(`/jobs/${existing.id}`);
+      onClose();
+    } else {
+      setShowJobImportModal(true);
+    }
+  };
 
   // Tab state: 'cv', 'cover-letter', or 'job-offer'
   const [activeTab, setActiveTab] = useState<'cv' | 'cover-letter' | 'job-offer'>('cv');
@@ -1142,6 +1163,16 @@ export default function CVDetailModal({
                   </>
                 )
               ) : null}
+              {canAnalyzeMatching && (
+                <button
+                  onClick={handleAnalyzeMatching}
+                  disabled={checkingExistingJob}
+                  className="inline-flex items-center gap-2 px-6 py-2 font-medium text-white bg-accent-600 hover:bg-accent-700 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <Target className="w-4 h-4" />
+                  {checkingExistingJob ? 'Checking...' : 'Analyze Matching'}
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 text-2xl w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
@@ -1199,6 +1230,16 @@ export default function CVDetailModal({
                 <button onClick={handleCoverLetterCancel} className="flex-1 px-4 py-2 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-200 rounded-lg text-sm font-medium transition-colors">Cancel</button>
                 <button onClick={handleCoverLetterSave} className="flex-1 px-4 py-2 bg-[#4CAF9B] text-white rounded-lg text-sm font-medium transition-colors">Save</button>
               </>
+            )}
+            {canAnalyzeMatching && !isEditing && !isCoverLetterEditing && (
+              <button
+                onClick={handleAnalyzeMatching}
+                disabled={checkingExistingJob}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-accent-600 text-white rounded-xl font-medium transition-colors hover:bg-accent-700 disabled:opacity-50"
+              >
+                <Target className="w-3.5 h-3.5" />
+                {checkingExistingJob ? 'Checking...' : 'Analyze Matching'}
+              </button>
             )}
           </div>
 
@@ -1656,6 +1697,21 @@ export default function CVDetailModal({
             coverLetter={selectedCoverLetter}
             onSave={handleCoverLetterSaveFromEditor}
             onCancel={() => setShowCoverLetterEditor(false)}
+          />
+        )}
+
+        {/* Job Import Modal (from-application mode) */}
+        {showJobImportModal && (
+          <JobImportModal
+            isOpen={showJobImportModal}
+            onClose={() => setShowJobImportModal(false)}
+            onJobImported={() => {}}
+            mode="from-application"
+            sourceApplication={application}
+            onSuccess={(jobId) => {
+              router.push(`/jobs/${jobId}`);
+              onClose();
+            }}
           />
         )}
       </div>
