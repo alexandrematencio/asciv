@@ -240,32 +240,31 @@ REQUIREMENTS:
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors">
       {/* Header */}
       <div className="bg-white dark:bg-primary-800 border-b border-primary-200 dark:border-primary-700 shadow-sm sticky top-0 z-30 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4">
-              <img src="/logo.svg" alt="Logo" className="h-10 w-auto" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 w-auto" />
               <nav className="flex items-center gap-1">
                 <button
                   onClick={() => router.push('/')}
-                  className="px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-100 hover:bg-primary-100 dark:hover:bg-primary-700 rounded-lg transition-colors"
+                  className="px-2 sm:px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-100 hover:bg-primary-100 dark:hover:bg-primary-700 rounded-lg transition-colors whitespace-nowrap"
                 >
-                  Applications
+                  Apply
                 </button>
-                <span className="px-3 py-2 text-sm font-medium text-primary-900 dark:text-primary-50 bg-primary-100 dark:bg-primary-700 rounded-lg flex items-center gap-2">
-                  <Target className="w-4 h-4" />
+                <span className="px-2 sm:px-3 py-2 text-sm font-medium text-primary-900 dark:text-primary-50 bg-primary-100 dark:bg-primary-700 rounded-lg flex items-center gap-1.5 sm:gap-2 whitespace-nowrap">
+                  <Target className="w-4 h-4 flex-shrink-0" />
                   Matching
                 </span>
               </nav>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowImportModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
+              className="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
             >
-              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-              Import Job
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Import Job</span>
             </button>
             {user && (
               <div className="relative" ref={userMenuRef}>
@@ -317,6 +316,10 @@ REQUIREMENTS:
                           </span>
                         )}
                       </button>
+                    </div>
+
+                    <div className="border-t border-primary-100 dark:border-primary-700 py-1">
+                      <ThemeToggle showLabel className="w-full px-4 py-2 justify-start text-sm" />
                     </div>
 
                     <div className="border-t border-primary-100 dark:border-primary-700 py-1">

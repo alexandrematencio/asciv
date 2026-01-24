@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, User, LogOut, ChevronDown, Edit2, Send, Calendar, Star, Ban, Trash2, FileText, Target, Clock, TrendingUp, Briefcase, Copy, CalendarPlus, ExternalLink, CheckCircle, X, HelpCircle } from 'lucide-react';
+import { Plus, User, LogOut, ChevronDown, Edit2, Send, Calendar, Star, Ban, Trash2, FileText, Target, Clock, Bell, Copy, CalendarPlus, ExternalLink, CheckCircle, X, HelpCircle } from 'lucide-react';
 import Button from '@/app/components/Button';
 import { ToastContainer } from '@/app/components/Toast';
 import NewApplicationModal from '@/app/components/NewApplicationModal';
@@ -1332,35 +1332,35 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
     closed: applications.filter(a => a.status === 'closed').length,
   };
 
-  // Calculate analytics-first KPIs (Priority D: Effort ROI)
-  const sentCount = stats.sent;
-  const interviewCount = stats.interview;
-  const interviewRate = sentCount > 0 ? Math.round((interviewCount / sentCount) * 100) : 0;
+  // Dashboard KPIs
+  const now = Date.now();
+  const DAY = 1000 * 60 * 60 * 24;
 
-  // Active opportunities (Priority C: Positive success indicators)
-  const activeOpps = applications.filter(a =>
-    ['sent', 'waiting', 'interview'].includes(a.status)
-  ).length;
+  // "Needs attention" — applications requiring user action
+  const needsAttention = applications.filter(a => {
+    if (a.status === 'sent' && a.tracking.sentDate && (now - a.tracking.sentDate) > 14 * DAY) return true;
+    if (a.tracking.interviewScheduled?.date) {
+      const daysUntil = (new Date(a.tracking.interviewScheduled.date).getTime() - now) / DAY;
+      if (daysUntil >= 0 && daysUntil <= 3) return true;
+    }
+    if (a.status === 'draft' && (now - a.createdAt) > 7 * DAY) return true;
+    return false;
+  }).length;
 
-  // Response time context - calculate based on interview scheduled or outcome dates
-  const respondedApps = applications.filter(a => {
-    if (!a.tracking.sentDate) return false;
-    // Consider "responded" if they scheduled interview or gave outcome
-    return a.tracking.interviewScheduled || a.tracking.outcome;
-  });
-
-  const avgResponseTime = respondedApps.length > 0
-    ? Math.round(
-        respondedApps.reduce((sum, app) => {
-          const sent = new Date(app.tracking.sentDate!);
-          // Use interview date or outcome date as response
-          const responseDate = app.tracking.interviewScheduled?.date || app.tracking.outcome?.date;
-          if (!responseDate) return sum;
-          const responded = new Date(responseDate);
-          return sum + (responded.getTime() - sent.getTime());
-        }, 0) / respondedApps.length / (1000 * 60 * 60 * 24)
-      )
+  // "In progress" — active pipeline count + last activity date
+  const inProgressApps = applications.filter(a => ['sent', 'waiting', 'interview'].includes(a.status));
+  const inProgressCount = inProgressApps.length;
+  const lastActivityDate = inProgressApps.length > 0
+    ? Math.max(...inProgressApps.map(a => a.tracking.sentDate || a.createdAt))
     : null;
+  const daysSinceActivity = lastActivityDate ? Math.round((now - lastActivityDate) / DAY) : null;
+
+  // "Responses received" — total responses (interviews + outcomes)
+  const responsesReceived = applications.filter(a =>
+    a.tracking.interviewScheduled || a.tracking.outcome
+  );
+  const interviewResponses = applications.filter(a => a.tracking.interviewScheduled).length;
+  const decisionResponses = applications.filter(a => a.tracking.outcome).length;
 
   return (
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors duration-200">
@@ -1374,19 +1374,19 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
 
       {/* Header */}
       <div className="bg-white dark:bg-primary-800 border-b border-primary-200 dark:border-primary-700 shadow-sm sticky top-0 z-30 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4">
-              <img src="/logo.svg" alt="Logo" className="h-10 w-auto" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 w-auto" />
               <nav className="flex items-center gap-1">
-                <span className="px-3 py-2 text-sm font-medium text-primary-900 dark:text-primary-50 bg-primary-100 dark:bg-primary-700 rounded-lg">
-                  Applications
+                <span className="px-2 sm:px-3 py-2 text-sm font-medium text-primary-900 dark:text-primary-50 bg-primary-100 dark:bg-primary-700 rounded-lg whitespace-nowrap">
+                  Apply
                 </span>
                 <button
                   onClick={() => router.push('/jobs')}
-                  className="px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-100 hover:bg-primary-100 dark:hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2"
+                  className="px-2 sm:px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-100 hover:bg-primary-100 dark:hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
                 >
-                  <Target className="w-4 h-4" />
+                  <Target className="w-4 h-4 flex-shrink-0" />
                   Matching
                   {savedJobsCount > 0 && (
                     <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-accent-600 text-white text-xs font-medium">
@@ -1397,14 +1397,13 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
               </nav>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowNewAppModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
+              className="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
             >
-              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-              New application
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">New application</span>
             </button>
             {user && (
               <div className="relative" ref={userMenuRef}>
@@ -1459,6 +1458,10 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                     </div>
 
                     <div className="border-t border-primary-100 dark:border-primary-700 py-1">
+                      <ThemeToggle showLabel className="w-full px-4 py-2 justify-start text-sm" />
+                    </div>
+
+                    <div className="border-t border-primary-100 dark:border-primary-700 py-1">
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
@@ -1478,123 +1481,63 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Analytics-First Dashboard */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 mb-6">
-          {/* PRIMARY KPIs - Success Metrics */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-medium text-primary-500 dark:text-primary-400 uppercase tracking-wide">Performance metrics</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Interview Rate */}
-              <div className="stat-card">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-success-600 dark:text-success-400 uppercase tracking-wide">Interview rate</span>
-                  <TrendingUp className="w-5 h-5 text-success-500" aria-hidden="true" />
-                </div>
-                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">{interviewRate}%</div>
-                <div className="text-xs text-primary-500 dark:text-primary-400">
-                  {interviewCount} of {sentCount} sent
-                </div>
-                {interviewRate >= 15 && (
-                  <div className="mt-2 text-xs font-medium text-success-600 dark:text-success-400">
-                    Above average
-                  </div>
-                )}
-              </div>
-
-              {/* Active Opportunities */}
-              <div className="stat-card">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-info-600 dark:text-info-400 uppercase tracking-wide">Active</span>
-                  <Target className="w-5 h-5 text-info-500" aria-hidden="true" />
-                </div>
-                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">{activeOpps}</div>
-                <div className="text-xs text-primary-500 dark:text-primary-400">
-                  In progress
-                </div>
-              </div>
-
-              {/* Response Time */}
-              <div className="stat-card">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">Avg response</span>
-                  <Clock className="w-5 h-5 text-primary-400" aria-hidden="true" />
-                </div>
-                <div className="text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
-                  {avgResponseTime !== null ? avgResponseTime : '--'}
-                </div>
-                <div className="text-xs text-primary-500 dark:text-primary-400">
-                  {avgResponseTime !== null ? 'days' : 'No data yet'}
-                </div>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Dashboard KPIs */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          {/* Needs attention */}
+          <div className="stat-card">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">Attention</span>
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400" aria-hidden="true" />
             </div>
-
-            {/* Offers Section */}
-            {stats.offer > 0 && (
-              <div className="bg-success-50 dark:bg-success-900/20 rounded-lg shadow-md p-5 border border-success-200 dark:border-success-700/30">
-                <div className="flex items-center gap-3">
-                  <Star className="w-8 h-8 text-success-500" aria-hidden="true" />
-                  <div>
-                    <div className="text-xl font-semibold text-success-700 dark:text-success-300">
-                      {stats.offer} offer{stats.offer > 1 ? 's' : ''} received
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
+              {needsAttention}
+            </div>
+            <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
+              {needsAttention === 0 ? 'All clear' : `${needsAttention} to review`}
+            </div>
           </div>
 
-          {/* PIPELINE FUNNEL */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-medium text-primary-500 dark:text-primary-400 uppercase tracking-wide">Pipeline</h2>
-            <div className="bg-white dark:bg-primary-800 rounded-lg shadow-md p-5 border border-primary-200 dark:border-primary-700 space-y-3">
-              {/* Draft */}
-              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary-400" aria-hidden="true" />
-                  <span className="font-medium text-primary-700 dark:text-primary-300">Draft</span>
-                </div>
-                <span className="text-xl font-semibold text-primary-600 dark:text-primary-300">{stats.draft}</span>
-              </div>
-
-              {/* Sent */}
-              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
-                <div className="flex items-center gap-2">
-                  <Send className="w-5 h-5 text-info-500" aria-hidden="true" />
-                  <span className="font-medium text-primary-700 dark:text-primary-300">Sent</span>
-                </div>
-                <span className="text-xl font-semibold text-info-600 dark:text-info-400">{stats.sent}</span>
-              </div>
-
-              {/* Interview */}
-              <div className="flex items-center justify-between py-2 border-b border-primary-100 dark:border-primary-700">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-accent-500" aria-hidden="true" />
-                  <span className="font-medium text-primary-700 dark:text-primary-300">Interview</span>
-                </div>
-                <span className="text-xl font-semibold text-accent-600 dark:text-accent-400">{stats.interview}</span>
-              </div>
-
-              {/* Offer */}
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-success-500" aria-hidden="true" />
-                  <span className="font-medium text-primary-700 dark:text-primary-300">Offer</span>
-                </div>
-                <span className="text-xl font-semibold text-success-600 dark:text-success-400">{stats.offer}</span>
-              </div>
+          {/* In progress */}
+          <div className="stat-card">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-info-600 dark:text-info-400 uppercase tracking-wide">Active</span>
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-info-500" aria-hidden="true" />
             </div>
+            <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
+              {inProgressCount}
+            </div>
+            <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
+              {daysSinceActivity !== null ? `Last ${daysSinceActivity}d ago` : 'No activity'}
+            </div>
+          </div>
 
-            {/* Archive filter info */}
-            {filterStatus === 'rejected' && stats.rejected > 0 && (
-              <div className="bg-primary-50 dark:bg-primary-800/50 rounded-lg p-3 border border-primary-200 dark:border-primary-700">
-                <div className="text-xs text-primary-500 dark:text-primary-400 text-center">
-                  {stats.rejected} archived application{stats.rejected > 1 ? 's' : ''}
-                </div>
-              </div>
-            )}
+          {/* Responses received */}
+          <div className="stat-card">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-success-600 dark:text-success-400 uppercase tracking-wide">Responses</span>
+              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success-500" aria-hidden="true" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
+              {responsesReceived.length}
+            </div>
+            <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
+              {responsesReceived.length === 0 ? 'Waiting' : `${interviewResponses} int. ${decisionResponses} dec.`}
+            </div>
           </div>
         </div>
+
+        {/* Offers Banner */}
+        {stats.offer > 0 && (
+          <div className="bg-success-50 dark:bg-success-900/20 rounded-lg shadow-md p-4 sm:p-5 border border-success-200 dark:border-success-700/30 mb-6">
+            <div className="flex items-center gap-3">
+              <Star className="w-7 h-7 sm:w-8 sm:h-8 text-success-500" aria-hidden="true" />
+              <div className="text-lg sm:text-xl font-semibold text-success-700 dark:text-success-300">
+                {stats.offer} offer{stats.offer > 1 ? 's' : ''} received
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex gap-2 mb-6 flex-wrap">
@@ -1638,13 +1581,13 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                     >
                       <div className="flex items-center justify-between">
                         {/* Left: Job Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-50">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                            <h3 className="text-base sm:text-lg font-semibold text-primary-900 dark:text-primary-50 truncate max-w-[200px] sm:max-w-none">
                               {app.role}
                             </h3>
-                            <span className="text-primary-300 dark:text-primary-600">•</span>
-                            <span className="text-primary-600 dark:text-primary-400">{app.company}</span>
+                            <span className="text-primary-300 dark:text-primary-600 flex-shrink-0">•</span>
+                            <span className="text-primary-600 dark:text-primary-400 truncate max-w-[140px] sm:max-w-none">{app.company}</span>
                             {app.jobUrl && (
                               <a
                                 href={app.jobUrl}
@@ -1657,7 +1600,7 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
-                            <span className={`badge ${
+                            <span className={`badge flex-shrink-0 ${
                               app.status === 'draft' ? 'badge-draft' :
                               app.status === 'sent' ? 'badge-sent' :
                               app.status === 'waiting' ? 'badge-waiting' :
@@ -2075,11 +2018,6 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
             onCreateNewCoverLetterVersion={(appId, currentCoverLetterId) => createNewCoverLetterVersion(appId, currentCoverLetterId)}
             onSetMainCoverLetter={(appId, coverLetterId) => setMainCoverLetter(appId, coverLetterId)}
             onDownloadCoverLetter={(coverLetter) => downloadCoverLetter(coverLetter, selectedApp)}
-          onMarkAsSent={(appId) => { markAsSent(appId); setSelectedApp(null); }}
-          onScheduleInterview={(appId) => { setInterviewAppId(appId); setShowInterviewModal(true); setSelectedApp(null); }}
-          onMarkOffer={(appId) => { toggleOffer(appId); setSelectedApp(null); }}
-          onMarkRejected={(appId) => { markAsRejected(appId); setSelectedApp(null); }}
-          onDeclineOffer={(appId) => { markAsClosed(appId, 'declined'); setSelectedApp(null); }}
         />
       )}
     </div>

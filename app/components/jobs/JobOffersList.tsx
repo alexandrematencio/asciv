@@ -88,7 +88,7 @@ export default function JobOffersList({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search jobs..."
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-primary-800 border border-primary-200 dark:border-primary-700 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-primary-800 border border-primary-200 dark:border-primary-700 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
             />
           </div>
         </form>

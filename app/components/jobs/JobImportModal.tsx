@@ -184,7 +184,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-primary-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-primary-200 dark:border-primary-700">
@@ -209,28 +209,28 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
           {step === 'input' && (
             <div className="space-y-4">
               {/* Mode Tabs */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full">
                 <button
                   onClick={() => setMode('paste')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     mode === 'paste'
                       ? 'bg-accent-600 text-white'
                       : 'bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-600'
                   }`}
                 >
-                  <FileText className="w-4 h-4" />
-                  Paste Description
+                  <FileText className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Paste</span>
                 </button>
                 <button
                   onClick={() => setMode('url')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     mode === 'url'
                       ? 'bg-accent-600 text-white'
                       : 'bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-600'
                   }`}
                 >
-                  <LinkIcon className="w-4 h-4" />
-                  From URL
+                  <LinkIcon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">From URL</span>
                 </button>
               </div>
 
@@ -244,7 +244,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://example.com/job/..."
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
                   />
                   <p className="mt-1 text-xs text-primary-500 dark:text-primary-400">
                     The job posting content will be automatically fetched and parsed.
@@ -262,7 +262,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Paste the full job description here..."
                     rows={12}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent resize-none font-mono text-sm"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77] resize-none font-mono text-sm"
                   />
                 </div>
               )}
@@ -295,7 +295,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
                   />
                 </div>
                 <div>
@@ -306,7 +306,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                     type="text"
                     value={editedCompany}
                     onChange={(e) => setEditedCompany(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
                   />
                 </div>
               </div>
@@ -320,7 +320,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported }: JobIm
                   value={editedLocation}
                   onChange={(e) => setEditedLocation(e.target.value)}
                   placeholder="e.g., Paris, France"
-                  className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
                 />
               </div>
 

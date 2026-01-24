@@ -30,32 +30,32 @@ export default function Button({
 
   const variants = {
     primary: `
-      bg-blue-600 text-white
-      hover:bg-blue-700 hover:shadow-md
-      active:bg-blue-800
-      focus:ring-blue-500
-      disabled:bg-blue-600
+      bg-accent-600 text-white
+      hover:bg-accent-700 hover:shadow-md
+      active:bg-accent-800
+      focus:ring-accent-500
+      disabled:bg-accent-600
     `,
     secondary: `
-      bg-gray-600 text-white
-      hover:bg-gray-700 hover:shadow-md
-      active:bg-gray-800
-      focus:ring-gray-500
-      disabled:bg-gray-600
+      bg-primary-600 text-white
+      hover:bg-primary-700 hover:shadow-md
+      active:bg-primary-800
+      focus:ring-primary-500
+      disabled:bg-primary-600
     `,
     success: `
-      bg-green-600 text-white
-      hover:bg-green-700 hover:shadow-md
-      active:bg-green-800
-      focus:ring-green-500
-      disabled:bg-green-600
+      bg-[#4CAF9B] text-white
+      hover:bg-[#3D9A89] hover:shadow-md
+      active:bg-[#358779]
+      focus:ring-[#4CAF9B]
+      disabled:bg-[#4CAF9B]
     `,
     danger: `
-      bg-red-600 text-white
-      hover:bg-red-700 hover:shadow-md
-      active:bg-red-800
-      focus:ring-red-500
-      disabled:bg-red-600
+      bg-error-600 text-white
+      hover:bg-error-700 hover:shadow-md
+      active:bg-error-800
+      focus:ring-error-500
+      disabled:bg-error-600
     `,
   };
 
