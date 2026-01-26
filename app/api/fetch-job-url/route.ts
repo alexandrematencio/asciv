@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-interface FetchJobUrlRequest {
-  url: string;
-}
+import { FetchJobUrlSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 interface FetchJobUrlResponse {
   success: boolean;
@@ -127,17 +124,20 @@ function extractMainContent(html: string): string {
 
 export async function POST(request: NextRequest): Promise<NextResponse<FetchJobUrlResponse>> {
   try {
-    const body: FetchJobUrlRequest = await request.json();
-    const { url } = body;
+    const body = await request.json();
 
-    if (!url) {
+    // Validate input with Zod
+    const validation = FetchJobUrlSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, content: null, error: 'Missing URL' },
+        { success: false, content: null, ...createValidationErrorResponse(validation.error) },
         { status: 400 }
       );
     }
 
-    // Validate URL
+    const { url } = validation.data;
+
+    // Validate URL protocol
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
@@ -147,6 +147,27 @@ export async function POST(request: NextRequest): Promise<NextResponse<FetchJobU
     } catch {
       return NextResponse.json(
         { success: false, content: null, error: 'Invalid URL format' },
+        { status: 400 }
+      );
+    }
+
+    // SSRF Protection: Block internal/private URLs
+    const blockedPatterns = [
+      /^localhost$/i,
+      /^127\./,
+      /^192\.168\./,
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[01])\./,
+      /^169\.254\./, // AWS/cloud metadata
+      /^0\.0\.0\.0$/,
+      /^::1$/, // IPv6 localhost
+      /^fc00:/, // IPv6 private
+      /^fe80:/, // IPv6 link-local
+    ];
+
+    if (blockedPatterns.some(pattern => pattern.test(parsedUrl.hostname))) {
+      return NextResponse.json(
+        { success: false, content: null, error: 'URL not allowed' },
         { status: 400 }
       );
     }
@@ -209,21 +230,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<FetchJobU
     });
 
   } catch (error) {
-    console.error('Fetch Job URL Error:', error);
-
-    // Handle specific errors
+    // Handle specific errors with user-friendly messages
     if (error instanceof TypeError && error.message.includes('fetch')) {
+      logAndGetSafeError('Fetch Job URL Error', error, 'Connection error');
       return NextResponse.json(
         { success: false, content: null, error: 'Unable to connect to the URL. Please check if the URL is correct.' },
         { status: 502 }
       );
     }
 
+    const errorMessage = logAndGetSafeError('Fetch Job URL Error', error, 'Failed to fetch job URL');
     return NextResponse.json(
       {
         success: false,
         content: null,
-        error: error instanceof Error ? error.message : 'Failed to fetch job URL'
+        error: errorMessage
       },
       { status: 500 }
     );

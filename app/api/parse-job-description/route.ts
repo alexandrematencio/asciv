@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { PresenceType, SalaryRateType } from '@/app/types';
-
-interface ParseJobRequest {
-  description: string;
-}
+import { ParseJobDescriptionSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 interface ParsedJobData {
   title: string | null;
@@ -102,23 +99,18 @@ Notes:
 
 export async function POST(request: NextRequest): Promise<NextResponse<ParseJobResponse>> {
   try {
-    const body: ParseJobRequest = await request.json();
-    const { description } = body;
+    const body = await request.json();
 
-    if (!description) {
+    // Validate input with Zod
+    const validation = ParseJobDescriptionSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, data: null, error: 'Missing job description' },
+        { success: false, data: null, ...createValidationErrorResponse(validation.error) },
         { status: 400 }
       );
     }
 
-    if (description.length > 100000) {
-      return NextResponse.json(
-        { success: false, data: null, error: 'Job description too long (max 100000 characters)' },
-        { status: 400 }
-      );
-    }
-
+    const { description } = validation.data;
     const prompt = getJobParsingPrompt(description);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -192,12 +184,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<ParseJobR
     });
 
   } catch (error) {
-    console.error('Parse Job Description Error:', error);
+    const errorMessage = logAndGetSafeError('Parse Job Description Error', error, 'Failed to parse job description');
     return NextResponse.json(
       {
         success: false,
         data: null,
-        error: error instanceof Error ? error.message : 'Failed to parse job description'
+        error: errorMessage
       },
       { status: 500 }
     );

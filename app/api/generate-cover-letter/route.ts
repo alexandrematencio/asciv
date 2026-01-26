@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GeneratePromptSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await request.json();
+    const body = await request.json();
+
+    // Validate input with Zod
+    const validation = GeneratePromptSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { ...createValidationErrorResponse(validation.error) },
+        { status: 400 }
+      );
+    }
+
+    const { prompt } = validation.data;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -27,9 +39,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ coverLetter });
   } catch (error) {
-    console.error('API Error:', error);
+    const errorMessage = logAndGetSafeError('Generate Cover Letter Error', error, 'Failed to generate cover letter');
     return NextResponse.json(
-      { error: 'Failed to generate cover letter' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

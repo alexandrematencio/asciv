@@ -248,12 +248,13 @@ export default function JobOfferCard({
               onClick={(e) => { e.preventDefault(); onAnalyze(job.id); }}
               disabled={analyzing}
               title="Analyze with AI"
+              aria-label="Analyze job offer with AI"
               className="w-7 h-7 inline-flex items-center justify-center text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-md transition-colors disabled:opacity-50"
             >
               {analyzing ? (
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-accent-600" />
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-accent-600" aria-hidden="true" />
               ) : (
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
           )}
@@ -261,9 +262,10 @@ export default function JobOfferCard({
             <button
               onClick={(e) => { e.preventDefault(); onSave(job.id); }}
               title="Save"
+              aria-label="Save job offer"
               className="w-7 h-7 inline-flex items-center justify-center text-primary-400 dark:text-primary-500 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-md transition-colors"
             >
-              <Star className="w-4 h-4" />
+              <Star className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
           {onDismiss && job.status !== 'archived' && (

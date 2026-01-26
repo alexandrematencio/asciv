@@ -1,31 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-interface Certification {
-  name: string;
-  issuer: string;
-  date: string;
-}
-
-interface Award {
-  title: string;
-  issuer: string;
-  date: string;
-  description?: string;
-}
-
-interface SuggestProjectsRequest {
-  jobDescription: string;
-  role: string;
-  company: string;
-  certifications: Certification[];
-  awards: Award[];
-  experience: string;
-}
+import { SuggestProjectsSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: SuggestProjectsRequest = await request.json();
-    const { jobDescription, role, company, certifications, awards, experience } = body;
+    const body = await request.json();
+
+    // Validate input with Zod
+    const validation = SuggestProjectsSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { ...createValidationErrorResponse(validation.error) },
+        { status: 400 }
+      );
+    }
+
+    const { jobDescription, role, company, certifications, awards, experience } = validation.data;
 
     if (!jobDescription && !role) {
       return NextResponse.json(
@@ -101,10 +90,10 @@ Only output the project suggestions, nothing else. If there's not enough informa
     });
 
   } catch (error) {
-    console.error('Suggest Projects Error:', error);
+    const errorMessage = logAndGetSafeError('Suggest Projects Error', error, 'Failed to generate project suggestions');
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to generate project suggestions',
+        error: errorMessage,
       },
       { status: 500 }
     );

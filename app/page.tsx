@@ -75,6 +75,9 @@ export default function JobHunterPro() {
   // Data loading state
   const [dataLoading, setDataLoading] = useState(true);
 
+  // Stat card filter state
+  const [activeStatFilter, setActiveStatFilter] = useState<'attention' | 'active' | 'responses' | null>(null);
+
   useEffect(() => {
     loadData();
     // Load saved jobs count for badge
@@ -1351,6 +1354,31 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
   const now = Date.now();
   const DAY = 1000 * 60 * 60 * 24;
 
+  // Helper: get attention type for an application
+  type AttentionType = 'sent-stale' | 'interview-soon' | 'draft-old' | null;
+  const getAttentionType = (app: Application): AttentionType => {
+    if (app.tracking.interviewScheduled?.date) {
+      const daysUntil = (new Date(app.tracking.interviewScheduled.date).getTime() - now) / DAY;
+      if (daysUntil >= 0 && daysUntil <= 3) return 'interview-soon';
+    }
+    if (app.status === 'sent' && app.tracking.sentDate && (now - app.tracking.sentDate) > 14 * DAY) {
+      return 'sent-stale';
+    }
+    if (app.status === 'draft' && (now - app.createdAt) > 7 * DAY) {
+      return 'draft-old';
+    }
+    return null;
+  };
+
+  // Helper: check if application matches the active stat filter
+  const isMatchingStatFilter = (app: Application): boolean => {
+    if (!activeStatFilter) return true;
+    if (activeStatFilter === 'attention') return getAttentionType(app) !== null;
+    if (activeStatFilter === 'active') return ['sent', 'waiting', 'interview'].includes(app.status);
+    if (activeStatFilter === 'responses') return !!(app.tracking.interviewScheduled || app.tracking.outcome);
+    return true;
+  };
+
   // "Needs attention" — applications requiring user action
   const needsAttention = applications.filter(a => {
     if (a.status === 'sent' && a.tracking.sentDate && (now - a.tracking.sentDate) > 14 * DAY) return true;
@@ -1539,10 +1567,15 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
             {/* Needs attention */}
-            <div className="stat-card">
+            <button
+              onClick={() => setActiveStatFilter(prev => prev === 'attention' ? null : 'attention')}
+              className={`stat-card cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] text-left ${
+                activeStatFilter === 'attention' ? 'ring-2 ring-warning-500 bg-warning-50/50 dark:bg-warning-900/10' : ''
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">Attention</span>
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400" aria-hidden="true" />
+                <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'attention' ? 'text-warning-500' : 'text-primary-400'}`} aria-hidden="true" />
               </div>
               <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
                 {needsAttention}
@@ -1550,13 +1583,18 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
               <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
                 {needsAttention === 0 ? 'All clear' : `${needsAttention} to review`}
               </div>
-            </div>
+            </button>
 
             {/* In progress */}
-            <div className="stat-card">
+            <button
+              onClick={() => setActiveStatFilter(prev => prev === 'active' ? null : 'active')}
+              className={`stat-card cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] text-left ${
+                activeStatFilter === 'active' ? 'ring-2 ring-info-500 bg-info-50/50 dark:bg-info-900/10' : ''
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-info-600 dark:text-info-400 uppercase tracking-wide">Active</span>
-                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-info-500" aria-hidden="true" />
+                <Activity className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'active' ? 'text-info-500' : 'text-info-500'}`} aria-hidden="true" />
               </div>
               <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
                 {inProgressCount}
@@ -1564,22 +1602,27 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
               <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
                 {daysSinceActivity !== null ? `Last ${daysSinceActivity}d ago` : 'No activity'}
               </div>
-            </div>
+            </button>
 
             {/* Responses received */}
-            <div className="stat-card">
+            <button
+              onClick={() => setActiveStatFilter(prev => prev === 'responses' ? null : 'responses')}
+              className={`stat-card cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] text-left ${
+                activeStatFilter === 'responses' ? 'ring-2 ring-success-500 bg-success-50/50 dark:bg-success-900/10' : ''
+              }`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-success-600 dark:text-success-400 uppercase tracking-wide">Responses</span>
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success-500" aria-hidden="true" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
-              {responsesReceived.length}
-            </div>
-            <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
-              {responsesReceived.length === 0 ? 'Waiting' : `${interviewResponses} int. ${decisionResponses} dec.`}
-            </div>
+                <CheckCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'responses' ? 'text-success-500' : 'text-success-500'}`} aria-hidden="true" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
+                {responsesReceived.length}
+              </div>
+              <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
+                {responsesReceived.length === 0 ? 'Waiting' : `${interviewResponses} int. ${decisionResponses} dec.`}
+              </div>
+            </button>
           </div>
-        </div>
         )}
 
         {/* Offers Banner */}
@@ -1599,7 +1642,10 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
           {(['all', 'draft', 'sent', 'waiting', 'interview', 'offer', 'rejected', 'closed'] as const).map(status => (
             <button
               key={status}
-              onClick={() => setFilterStatus(status)}
+              onClick={() => {
+                setFilterStatus(status);
+                setActiveStatFilter(null); // Reset stat filter when clicking pills
+              }}
               className={`filter-pill capitalize ${filterStatus === status ? 'active' : ''}`}
             >
               {status} ({status === 'all' ? applications.length : stats[status as keyof typeof stats] || 0})
@@ -1629,14 +1675,34 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
             <div className="divide-y divide-primary-100 dark:divide-primary-700">
               {sortedApps.map(app => {
                 const hasInterview = !!app.tracking.interviewScheduled;
+                const attentionType = getAttentionType(app);
+                const isFiltered = isMatchingStatFilter(app);
 
                 return (
                   <div key={app.id}>
                     <div
-                      className="group relative p-4 cursor-pointer transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-700/30 border-l-4 border-l-transparent hover:border-l-primary-300 dark:hover:border-l-primary-500"
+                      className={`group relative p-4 cursor-pointer transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-700/30 border-l-4 border-l-transparent hover:border-l-primary-300 dark:hover:border-l-primary-500 ${
+                        !isFiltered && activeStatFilter ? 'opacity-40' : ''
+                      }`}
                       onClick={() => setSelectedApp(app)}
                     >
                       <div className="flex items-center justify-between">
+                        {/* Attention indicator */}
+                        {attentionType && (
+                          <div
+                            className="flex-shrink-0 mr-3 flex items-center"
+                            title={
+                              attentionType === 'sent-stale' ? `Sent ${Math.round((now - (app.tracking.sentDate || 0)) / DAY)} days ago, no response` :
+                              attentionType === 'interview-soon' ? `Interview in ${Math.round((new Date(app.tracking.interviewScheduled!.date).getTime() - now) / DAY)} day(s)` :
+                              attentionType === 'draft-old' ? `Draft since ${Math.round((now - app.createdAt) / DAY)} days` :
+                              ''
+                            }
+                          >
+                            {attentionType === 'sent-stale' && <Clock className="w-4 h-4 text-warning-500" />}
+                            {attentionType === 'interview-soon' && <Bell className="w-4 h-4 text-info-500" />}
+                            {attentionType === 'draft-old' && <FileText className="w-4 h-4 text-primary-400" />}
+                          </div>
+                        )}
                         {/* Left: Job Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

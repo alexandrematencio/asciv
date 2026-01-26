@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Education, WorkExperience, Skill, SkillCategory, SkillProficiency } from '@/app/types';
+import { ParseCvSectionSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 type SectionType = 'education' | 'experience' | 'skills' | 'personal';
-
-interface ParseRequest {
-  section: SectionType;
-  content: string;
-}
 
 interface Uncertainty {
   entryIndex: number;
@@ -295,29 +291,18 @@ function processSkillEntries(entries: Array<{
 
 export async function POST(request: NextRequest): Promise<NextResponse<ParseResponse>> {
   try {
-    const body: ParseRequest = await request.json();
-    const { section, content } = body;
+    const body = await request.json();
 
-    if (!section || !content) {
+    // Validate input with Zod
+    const validation = ParseCvSectionSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, data: [], uncertainties: [], error: 'Missing section or content' },
+        { success: false, data: [], uncertainties: [], ...createValidationErrorResponse(validation.error) },
         { status: 400 }
       );
     }
 
-    if (!['education', 'experience', 'skills', 'personal'].includes(section)) {
-      return NextResponse.json(
-        { success: false, data: [], uncertainties: [], error: 'Invalid section type' },
-        { status: 400 }
-      );
-    }
-
-    if (content.length > 50000) {
-      return NextResponse.json(
-        { success: false, data: [], uncertainties: [], error: 'Content too long (max 50000 characters)' },
-        { status: 400 }
-      );
-    }
+    const { section, content } = validation.data;
 
     const prompt = getPromptForSection(section, content);
 
@@ -394,13 +379,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ParseResp
     });
 
   } catch (error) {
-    console.error('Parse CV Section Error:', error);
+    const errorMessage = logAndGetSafeError('Parse CV Section Error', error, 'Failed to parse CV section');
     return NextResponse.json(
       {
         success: false,
         data: [],
         uncertainties: [],
-        error: error instanceof Error ? error.message : 'Failed to parse CV section'
+        error: errorMessage
       },
       { status: 500 }
     );

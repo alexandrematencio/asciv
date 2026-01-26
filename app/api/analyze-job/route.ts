@@ -15,12 +15,7 @@ import {
   getMissingSkills,
   type MatchData,
 } from '@/lib/job-filter-service';
-
-interface AnalyzeJobRequest {
-  jobOffer: Partial<JobOffer>;
-  preferences: JobPreferences;
-  userProfile: UserProfile;
-}
+import { AnalyzeJobSchema, createValidationErrorResponse, logAndGetSafeError } from '@/lib/validation-schemas';
 
 interface AnalyzeJobResponse {
   success: boolean;
@@ -240,15 +235,21 @@ function generateFallbackInsights(matchData: MatchData): AIInsights {
 
 export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeJobResponse>> {
   try {
-    const body: AnalyzeJobRequest = await request.json();
-    const { jobOffer, preferences, userProfile } = body;
+    const body = await request.json();
 
-    if (!jobOffer || !preferences || !userProfile) {
+    // Validate input with Zod
+    const validation = AnalyzeJobSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, result: null, error: 'Missing required data: jobOffer, preferences, or userProfile' },
+        { success: false, result: null, ...createValidationErrorResponse(validation.error) },
         { status: 400 }
       );
     }
+
+    // Cast to proper types (Zod validated structure, TypeScript types are authoritative)
+    const jobOffer = validation.data.jobOffer as unknown as Partial<JobOffer>;
+    const preferences = validation.data.preferences as unknown as JobPreferences;
+    const userProfile = validation.data.userProfile as unknown as UserProfile;
 
     // Step 1: Apply hard blockers
     const blockerResult = applyHardBlockers(jobOffer, preferences);
@@ -308,12 +309,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeJo
     });
 
   } catch (error) {
-    console.error('Analyze Job Error:', error);
+    const errorMessage = logAndGetSafeError('Analyze Job Error', error, 'Failed to analyze job');
     return NextResponse.json(
       {
         success: false,
         result: null,
-        error: error instanceof Error ? error.message : 'Failed to analyze job'
+        error: errorMessage
       },
       { status: 500 }
     );

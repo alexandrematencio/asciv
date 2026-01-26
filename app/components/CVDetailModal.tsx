@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Crown, Zap, Flag, Rocket, Plus, FilePlus, X, Pencil, Trash2, Target } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { Application, CVVersion, CoverLetter, CoverLetterStyle, RecipientInfo } from '../types';
 import CVEditor from './CVEditor';
 import CoverLetterModal from './CoverLetterModal';
@@ -11,6 +12,12 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useProfile } from '../contexts/ProfileContext';
 import { getJobOfferByApplicationId } from '@/lib/job-intelligence-db';
+
+// Helper to sanitize text for safe HTML interpolation
+const sanitizeText = (text: string | null | undefined): string => {
+  if (!text) return '';
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+};
 
 const STYLE_INFO = {
   french_formal: {
@@ -401,30 +408,30 @@ export default function CVDetailModal({
     // Header with columns
     html += '<div style="display: flex; justify-content: space-between; margin-bottom: 32px; font-size: 14px;">';
 
-    // Sender column
+    // Sender column (sanitized for XSS protection)
     html += '<div style="flex: 1;">';
-    html += `<p style="font-weight: 600; color: #111827; margin-bottom: 4px;">${senderInfo.name}</p>`;
-    if (senderInfo.email) html += `<p style="color: #374151; margin-bottom: 4px;">${senderInfo.email}</p>`;
-    if (senderInfo.phone) html += `<p style="color: #374151; margin-bottom: 4px;">${senderInfo.phone}</p>`;
-    if (senderInfo.address) html += `<p style="color: #374151;">${senderInfo.address}</p>`;
+    html += `<p style="font-weight: 600; color: #111827; margin-bottom: 4px;">${sanitizeText(senderInfo.name)}</p>`;
+    if (senderInfo.email) html += `<p style="color: #374151; margin-bottom: 4px;">${sanitizeText(senderInfo.email)}</p>`;
+    if (senderInfo.phone) html += `<p style="color: #374151; margin-bottom: 4px;">${sanitizeText(senderInfo.phone)}</p>`;
+    if (senderInfo.address) html += `<p style="color: #374151;">${sanitizeText(senderInfo.address)}</p>`;
     html += '</div>';
 
-    // Recipient column
+    // Recipient column (sanitized for XSS protection)
     html += '<div style="flex: 1;">';
     html += '<p style="font-weight: 600; color: #111827; margin-bottom: 4px;">À destination de:</p>';
-    html += `<p style="font-weight: 600; color: #111827; margin-bottom: 4px;">${letter.recipientInfo.companyName}</p>`;
+    html += `<p style="font-weight: 600; color: #111827; margin-bottom: 4px;">${sanitizeText(letter.recipientInfo.companyName)}</p>`;
     if (letter.recipientInfo.recipientTitle) {
-      html += `<p style="color: #374151; margin-bottom: 4px;">${letter.recipientInfo.recipientTitle}`;
-      if (letter.recipientInfo.recipientName) html += ` - ${letter.recipientInfo.recipientName}`;
+      html += `<p style="color: #374151; margin-bottom: 4px;">${sanitizeText(letter.recipientInfo.recipientTitle)}`;
+      if (letter.recipientInfo.recipientName) html += ` - ${sanitizeText(letter.recipientInfo.recipientName)}`;
       html += '</p>';
     } else if (letter.recipientInfo.recipientName) {
-      html += `<p style="color: #374151; margin-bottom: 4px;">${letter.recipientInfo.recipientName}</p>`;
+      html += `<p style="color: #374151; margin-bottom: 4px;">${sanitizeText(letter.recipientInfo.recipientName)}</p>`;
     }
     if (letter.recipientInfo.address) {
-      html += `<p style="color: #374151; margin-bottom: 4px;">${letter.recipientInfo.address}</p>`;
+      html += `<p style="color: #374151; margin-bottom: 4px;">${sanitizeText(letter.recipientInfo.address)}</p>`;
     }
     if (letter.recipientInfo.postalCode || letter.recipientInfo.city) {
-      html += `<p style="color: #374151;">${letter.recipientInfo.postalCode || ''} ${letter.recipientInfo.city || ''}</p>`;
+      html += `<p style="color: #374151;">${sanitizeText(letter.recipientInfo.postalCode)} ${sanitizeText(letter.recipientInfo.city)}</p>`;
     }
     html += '</div>';
     html += '</div>';
@@ -437,9 +444,10 @@ export default function CVDetailModal({
     });
     html += `<div style="margin-bottom: 12px; font-size: 14px; color: #374151;">${dateStr}</div>`;
 
-    // Letter body
+    // Letter body (sanitized for XSS protection)
     bodyContent.split('\n').forEach(line => {
       const cleanedLine = line.replace(/\*\*/g, '').replace(/\*/g, '');
+      const sanitizedLine = sanitizeText(cleanedLine);
 
       const isObjectLine = cleanedLine.toLowerCase().startsWith('objet:') ||
         cleanedLine.toLowerCase().startsWith('object:') ||
@@ -447,11 +455,11 @@ export default function CVDetailModal({
         cleanedLine.toLowerCase().startsWith('re:');
 
       if (isObjectLine) {
-        html += `<p style="font-weight: bold; margin-bottom: 24px; color: #111827;">${cleanedLine}</p>`;
+        html += `<p style="font-weight: bold; margin-bottom: 24px; color: #111827;">${sanitizedLine}</p>`;
       } else if (cleanedLine.trim() === '') {
         html += '<br/>';
       } else {
-        html += `<p style="font-size: 14px; margin-bottom: 8px; color: #1f2937; line-height: 1.6;">${cleanedLine}</p>`;
+        html += `<p style="font-size: 14px; margin-bottom: 8px; color: #1f2937; line-height: 1.6;">${sanitizedLine}</p>`;
       }
     });
 
@@ -670,8 +678,8 @@ export default function CVDetailModal({
           <div className="px-2 pt-3 pb-0 bg-gray-100 dark:bg-primary-800 border-b border-gray-200 dark:border-primary-700">
             <div className="flex items-center justify-between sm:hidden mb-2 px-2">
               <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-200">{application.company} — {application.role}</h2>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-primary-500 hover:bg-primary-200 dark:hover:bg-primary-700 transition-colors">
-                <X className="w-5 h-5" />
+              <button onClick={onClose} aria-label="Close application details" className="p-1.5 rounded-lg text-primary-500 hover:bg-primary-200 dark:hover:bg-primary-700 transition-colors">
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <div className="flex gap-1">
