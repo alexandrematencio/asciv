@@ -72,12 +72,31 @@ export async function loadUserProfile(): Promise<UserProfile | null> {
     .single();
 
   if (error) {
+    // No rows found - legitimate case
     if (error.code === 'PGRST116') {
-      // No profile exists yet
       return null;
     }
-    console.error('Error loading user profile:', error);
-    return null;
+
+    // RLS permission denied
+    if (error.code === '42501' || error.code === 'PGRST301') {
+      console.error('❌ RLS POLICY BLOCKING ACCESS:', {
+        code: error.code,
+        message: error.message,
+        userId,
+        hint: 'Check Supabase RLS policies for user_profiles table'
+      });
+      // Don't create empty profile, this is an RLS issue
+      throw new Error('Permission denied: Unable to access profile. Please contact support.');
+    }
+
+    // Other errors (network, etc.)
+    console.error('Error loading user profile:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    throw new Error('Failed to load profile. Please try again.');
   }
 
   return {
@@ -144,8 +163,25 @@ export async function saveUserProfile(profile: Partial<UserProfile>): Promise<bo
     });
 
   if (error) {
-    console.error('Error saving user profile:', error);
-    return false;
+    // RLS permission denied
+    if (error.code === '42501' || error.code === 'PGRST301') {
+      console.error('❌ RLS POLICY BLOCKING ACCESS:', {
+        code: error.code,
+        message: error.message,
+        userId,
+        hint: 'Check Supabase RLS policies for user_profiles table'
+      });
+      throw new Error('Permission denied: Unable to save profile. Please contact support.');
+    }
+
+    // Other errors
+    console.error('Error saving user profile:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    throw new Error('Failed to save profile. Please try again.');
   }
 
   return true;
@@ -159,6 +195,23 @@ export async function createEmptyProfile(): Promise<UserProfile | null> {
   if (!userId || !user) {
     console.error('No authenticated user');
     return null;
+  }
+
+  // ✅ CHECK if profile already exists (may be RLS issue)
+  const { data: existingProfiles, error: checkError } = await supabase
+    .from('user_profiles')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (!checkError && existingProfiles && existingProfiles.length > 0) {
+    console.warn('⚠️ Profile already exists but was not loaded. Possible RLS issue.', {
+      userId,
+      existingCount: existingProfiles.length,
+      oldestId: existingProfiles[existingProfiles.length - 1].id
+    });
+    // Don't create new profile, throw error to alert
+    throw new Error('Profile exists but is inaccessible. Please contact support.');
   }
 
   const newProfile: Partial<UserProfile> = {
@@ -205,8 +258,30 @@ export async function loadRoleProfiles(): Promise<RoleProfile[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error loading role profiles:', error);
-    return [];
+    // No rows found - legitimate case (user has no role profiles yet)
+    if (error.code === 'PGRST116') {
+      return [];
+    }
+
+    // RLS permission denied
+    if (error.code === '42501' || error.code === 'PGRST301') {
+      console.error('❌ RLS POLICY BLOCKING ACCESS:', {
+        code: error.code,
+        message: error.message,
+        userId,
+        hint: 'Check Supabase RLS policies for role_profiles table'
+      });
+      throw new Error('Permission denied: Unable to access role profiles. Please contact support.');
+    }
+
+    // Other errors
+    console.error('Error loading role profiles:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    throw new Error('Failed to load role profiles. Please try again.');
   }
 
   return data.map((rp) => ({
@@ -267,8 +342,25 @@ export async function saveRoleProfile(roleProfile: Partial<RoleProfile>): Promis
     });
 
   if (error) {
-    console.error('Error saving role profile:', error);
-    return false;
+    // RLS permission denied
+    if (error.code === '42501' || error.code === 'PGRST301') {
+      console.error('❌ RLS POLICY BLOCKING ACCESS:', {
+        code: error.code,
+        message: error.message,
+        userId,
+        hint: 'Check Supabase RLS policies for role_profiles table'
+      });
+      throw new Error('Permission denied: Unable to save role profile. Please contact support.');
+    }
+
+    // Other errors
+    console.error('Error saving role profile:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    throw new Error('Failed to save role profile. Please try again.');
   }
 
   return true;

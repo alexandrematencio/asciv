@@ -54,13 +54,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Load user profile
   const refreshProfile = useCallback(async () => {
-    // Don't attempt to load if auth is still loading
+    // Wait for auth to finish loading
     if (authLoading) {
+      // Signal that we're waiting for auth
+      setProfileLoading(true);
       return;
     }
 
     if (!user) {
       setProfile(null);
+      setProfileError(null);
       setProfileLoading(false);
       return;
     }
@@ -71,15 +74,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       let loadedProfile = await loadUserProfile();
 
-      // Create empty profile if none exists
+      // Create empty profile ONLY if no error thrown
       if (!loadedProfile) {
+        console.log('No profile found, creating empty profile for user:', user.id);
         loadedProfile = await createEmptyProfile();
       }
 
       setProfile(loadedProfile);
     } catch (error) {
       console.error('Error loading profile:', error);
-      setProfileError('Failed to load profile');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load profile';
+      setProfileError(errorMessage);
+      // Don't set profile to null if error - keep old state
     } finally {
       setProfileLoading(false);
     }
@@ -87,8 +93,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Load role profiles
   const refreshRoleProfiles = useCallback(async () => {
-    // Don't attempt to load if auth is still loading
+    // Wait for auth to finish loading
     if (authLoading) {
+      // Signal that we're waiting for auth
+      setRoleProfilesLoading(true);
       return;
     }
 
@@ -105,6 +113,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setRoleProfiles(loadedRoles);
     } catch (error) {
       console.error('Error loading role profiles:', error);
+      // Don't clear role profiles on error - keep old state
     } finally {
       setRoleProfilesLoading(false);
     }
