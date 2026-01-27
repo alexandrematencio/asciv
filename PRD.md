@@ -602,8 +602,27 @@ User Profile (Supabase)     Job Description (User Input)
 - Manual entry option: description updated to mention profile prefill behavior
 - Role profile save prompt: when using a role profile and modifying data in step 3, a confirmation modal asks whether to update the role profile with changes before creating the application
 
+### Attention Indicators & Dynamic Sorting
+- **Visual Hierarchy System** (Left Border Accent):
+  - `interview-soon` (HIGH): 4px red border (`error-500`) + subtle red background (`error-50/30`) + Calendar icon (`w-5 h-5`, `error-600`)
+  - `sent-stale` (MEDIUM): 4px amber border (`warning-500`) + subtle amber background (`warning-50/30`) + Clock icon (`w-5 h-5`, `warning-600`)
+  - `draft-old` (LOW): 4px gray border (`primary-300`) + no background + FileText icon (`w-5 h-5`, `primary-400`)
+- **Dynamic Sorting on Stat Filter Click**:
+  - When clicking stat cards (Attention, Active, Responses), matching applications bubble to the top
+  - Non-matching applications fade to `opacity-40` and move to bottom
+  - For "Attention" filter: apps sort by priority (interview-soon > sent-stale > draft-old)
+  - Secondary sort always by creation date (newest first)
+- **Accessibility** (WCAG AA Triple Encoding):
+  - Color: Red/Amber/Gray borders
+  - Shape: Different icons (Calendar/Clock/FileText)
+  - Text: Descriptive `aria-label` tooltips (e.g., "Interview in 2 day(s)")
+- **Brand Alignment**:
+  - Red for interview-soon avoids conflict with violet interview badges
+  - No pulse animations (violates "calm, professional" brand guideline)
+  - Static indicators with urgent colors reduce anxiety without creating stress
+
 ---
 
 *Document maintained by the Asciv Product Team*
-*Last updated: 2026-01-24*
+*Last updated: 2026-01-26*
 

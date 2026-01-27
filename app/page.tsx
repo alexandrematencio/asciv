@@ -1332,25 +1332,7 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
           ? applications.filter(a => a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed'))
           : applications.filter(a => a.status === filterStatus);
 
-  // Sort by most recent
-  const sortedApps = [...filteredApps].sort((a, b) => b.createdAt - a.createdAt);
-
-  // Calculate basic stats
-  const stats = {
-    total: applications.length,
-    draft: applications.filter(a => a.status === 'draft').length,
-    // "Sent" includes all applications that have been sent (have sentDate or appliedAt)
-    sent: applications.filter(a => a.tracking.sentDate || a.appliedAt).length,
-    // "Waiting" includes sent, waiting, and interview (all pending final response)
-    waiting: applications.filter(a => a.status === 'sent' || a.status === 'waiting' || a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed')).length,
-    // Interview: status is 'interview' OR has interviewScheduled
-    interview: applications.filter(a => a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed')).length,
-    offer: applications.filter(a => a.status === 'offer').length,
-    rejected: applications.filter(a => a.status === 'rejected').length,
-    closed: applications.filter(a => a.status === 'closed').length,
-  };
-
-  // Dashboard KPIs
+  // Helper constants and functions for sorting and attention detection
   const now = Date.now();
   const DAY = 1000 * 60 * 60 * 24;
 
@@ -1378,6 +1360,73 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
     if (activeStatFilter === 'responses') return !!(app.tracking.interviewScheduled || app.tracking.outcome);
     return true;
   };
+
+  // Sort by most recent (with smart filtering when stat filter active)
+  const sortedApps = [...filteredApps].sort((a, b) => {
+    // When a stat filter is active, bring matching apps to the top
+    if (activeStatFilter) {
+      const aMatches = isMatchingStatFilter(a);
+      const bMatches = isMatchingStatFilter(b);
+
+      // Matching apps before non-matching apps
+      if (aMatches && !bMatches) return -1;
+      if (!aMatches && bMatches) return 1;
+
+      // If both match (or both don't), sort by attention priority when "attention" filter active
+      if (aMatches && bMatches && activeStatFilter === 'attention') {
+        const aAttention = getAttentionType(a);
+        const bAttention = getAttentionType(b);
+
+        // Priority order: interview-soon > sent-stale > draft-old
+        const priority = { 'interview-soon': 3, 'sent-stale': 2, 'draft-old': 1 };
+        const aPriority = aAttention ? priority[aAttention] : 0;
+        const bPriority = bAttention ? priority[bAttention] : 0;
+
+        if (aPriority !== bPriority) return bPriority - aPriority;
+      }
+    }
+
+    // Secondary sort by creation date (newest first)
+    return b.createdAt - a.createdAt;
+  });
+
+  // Calculate basic stats
+  const stats = {
+    total: applications.length,
+    draft: applications.filter(a => a.status === 'draft').length,
+    // "Sent" includes all applications that have been sent (have sentDate or appliedAt)
+    sent: applications.filter(a => a.tracking.sentDate || a.appliedAt).length,
+    // "Waiting" includes sent, waiting, and interview (all pending final response)
+    waiting: applications.filter(a => a.status === 'sent' || a.status === 'waiting' || a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed')).length,
+    // Interview: status is 'interview' OR has interviewScheduled
+    interview: applications.filter(a => a.status === 'interview' || (a.tracking.interviewScheduled && a.status !== 'offer' && a.status !== 'rejected' && a.status !== 'closed')).length,
+    offer: applications.filter(a => a.status === 'offer').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
+    closed: applications.filter(a => a.status === 'closed').length,
+  };
+
+  // Dashboard KPIs
+  // Attention visual styles (left border + background + icon)
+  const attentionStyles = {
+    'draft-old': {
+      border: 'border-l-primary-300 dark:border-l-primary-600',
+      background: '',
+      iconClass: 'text-primary-400 dark:text-primary-500',
+      IconComponent: FileText,
+    },
+    'sent-stale': {
+      border: 'border-l-warning-500 dark:border-l-warning-400',
+      background: 'bg-warning-50/30 dark:bg-warning-900/10',
+      iconClass: 'text-warning-600 dark:text-warning-400',
+      IconComponent: Clock,
+    },
+    'interview-soon': {
+      border: 'border-l-error-500 dark:border-l-error-400',
+      background: 'bg-error-50/30 dark:bg-error-900/10',
+      iconClass: 'text-error-600 dark:text-error-400',
+      IconComponent: Calendar,
+    },
+  } as const;
 
   // "Needs attention" — applications requiring user action
   const needsAttention = applications.filter(a => {
@@ -1681,9 +1730,11 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                 return (
                   <div key={app.id}>
                     <div
-                      className={`group relative p-4 cursor-pointer transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-700/30 border-l-4 border-l-transparent hover:border-l-primary-300 dark:hover:border-l-primary-500 ${
-                        !isFiltered && activeStatFilter ? 'opacity-40' : ''
-                      }`}
+                      className={`group relative p-4 cursor-pointer transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-700/30 border-l-4 ${
+                        attentionType
+                          ? `${attentionStyles[attentionType].border} ${attentionStyles[attentionType].background}`
+                          : 'border-l-transparent hover:border-l-primary-300 dark:hover:border-l-primary-500'
+                      } ${!isFiltered && activeStatFilter ? 'opacity-40' : ''}`}
                       onClick={() => setSelectedApp(app)}
                     >
                       <div className="flex items-center justify-between">
@@ -1691,6 +1742,12 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                         {attentionType && (
                           <div
                             className="flex-shrink-0 mr-3 flex items-center"
+                            aria-label={
+                              attentionType === 'sent-stale' ? `Sent ${Math.round((now - (app.tracking.sentDate || 0)) / DAY)} days ago, no response` :
+                              attentionType === 'interview-soon' ? `Interview in ${Math.round((new Date(app.tracking.interviewScheduled!.date).getTime() - now) / DAY)} day(s)` :
+                              attentionType === 'draft-old' ? `Draft since ${Math.round((now - app.createdAt) / DAY)} days` :
+                              ''
+                            }
                             title={
                               attentionType === 'sent-stale' ? `Sent ${Math.round((now - (app.tracking.sentDate || 0)) / DAY)} days ago, no response` :
                               attentionType === 'interview-soon' ? `Interview in ${Math.round((new Date(app.tracking.interviewScheduled!.date).getTime() - now) / DAY)} day(s)` :
@@ -1698,9 +1755,10 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                               ''
                             }
                           >
-                            {attentionType === 'sent-stale' && <Clock className="w-4 h-4 text-warning-500" />}
-                            {attentionType === 'interview-soon' && <Bell className="w-4 h-4 text-info-500" />}
-                            {attentionType === 'draft-old' && <FileText className="w-4 h-4 text-primary-400" />}
+                            {(() => {
+                              const { IconComponent, iconClass } = attentionStyles[attentionType];
+                              return <IconComponent className={`w-5 h-5 ${iconClass}`} aria-hidden="true" />;
+                            })()}
                           </div>
                         )}
                         {/* Left: Job Info */}

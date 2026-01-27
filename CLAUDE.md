@@ -415,6 +415,17 @@ The app has 3 main sections accessible via a bottom nav bar:
 - Application list with status filtering (all, draft, sent, waiting, interview, offer, rejected)
 - KPI dashboard (counts by status)
 - Interview tracking (excludes offer/rejected/closed from interview filter)
+- **Attention Indicators System**:
+  - Left Border Accent (4px) + Background Tint + Icon Upgrade
+  - `interview-soon` (HIGH): Red border + Calendar icon (w-5 h-5)
+  - `sent-stale` (MEDIUM): Amber border + Clock icon (w-5 h-5)
+  - `draft-old` (LOW): Gray border + FileText icon (w-5 h-5)
+  - Triple encoding for accessibility (color + shape + aria-label)
+- **Dynamic Sorting on Stat Filters**:
+  - Clicking stat cards (Attention, Active, Responses) bubbles matching apps to top
+  - Non-matching apps fade to opacity-40 and move to bottom
+  - Attention filter: sorts by priority (interview-soon > sent-stale > draft-old)
+  - Secondary sort: creation date (newest first)
 
 ### Modals
 - `CVDetailModal.tsx` - View/edit application details, CV versions, cover letters, "Analyze Matching" button (bridges to JobImportModal in from-application mode)
@@ -551,6 +562,8 @@ Calculated in `lib/profile-db.ts` with weighted scoring:
 - ✅ Application → Matching Bridge — one-click analysis from existing applications
 - ✅ Match Statistics Redesign — skills & perks detail breakdown (matched/missing/extra)
 - ✅ Role Profile Save Prompt — detect edits in new application flow, offer to update role profile
+- ✅ Attention Indicators Visual Hierarchy — left border accent (4px) with color/icon differentiation for 3 urgency levels (interview-soon/sent-stale/draft-old)
+- ✅ Dynamic Sorting on Stat Filters — clicking attention/active/responses stat cards bubbles matching apps to top with priority-based sub-sorting
 
 ### Future Roadmap
 1. **Job Scraping Integration** - Auto-import from LinkedIn, Indeed, etc.
@@ -561,4 +574,4 @@ Calculated in `lib/profile-db.ts` with weighted scoring:
 
 ---
 
-*Last updated: 2026-01-24*
+*Last updated: 2026-01-26*
