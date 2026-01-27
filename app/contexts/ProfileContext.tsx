@@ -54,40 +54,50 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Load user profile
   const refreshProfile = useCallback(async () => {
+    console.log('👤 [ProfileContext] refreshProfile called', { authLoading, hasUser: !!user });
+
     // Wait for auth to finish loading
     if (authLoading) {
       // Signal that we're waiting for auth
+      console.log('👤 [ProfileContext] Waiting for auth to finish...');
       setProfileLoading(true);
       return;
     }
 
     if (!user) {
+      console.log('👤 [ProfileContext] No user, clearing profile');
       setProfile(null);
       setProfileError(null);
       setProfileLoading(false);
       return;
     }
 
+    console.log('👤 [ProfileContext] Loading profile for user:', user.id);
     setProfileLoading(true);
     setProfileError(null);
 
     try {
       let loadedProfile = await loadUserProfile();
+      console.log('👤 [ProfileContext] loadUserProfile result:', loadedProfile ? 'profile found' : 'no profile');
 
       // Create empty profile ONLY if no error thrown
       if (!loadedProfile) {
-        console.log('No profile found, creating empty profile for user:', user.id);
+        console.log('👤 [ProfileContext] No profile found, creating empty profile for user:', user.id);
         loadedProfile = await createEmptyProfile();
+        console.log('👤 [ProfileContext] createEmptyProfile result:', loadedProfile ? 'created' : 'failed');
       }
 
       setProfile(loadedProfile);
+      console.log('👤 [ProfileContext] Profile set successfully');
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('👤 [ProfileContext] ❌ ERROR loading profile:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load profile';
       setProfileError(errorMessage);
+      console.error('👤 [ProfileContext] Error message:', errorMessage);
       // Don't set profile to null if error - keep old state
     } finally {
       setProfileLoading(false);
+      console.log('👤 [ProfileContext] refreshProfile complete');
     }
   }, [user, authLoading]);
 
