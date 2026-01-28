@@ -564,6 +564,37 @@ Calculated in `lib/profile-db.ts` with weighted scoring:
 - ✅ Role Profile Save Prompt — detect edits in new application flow, offer to update role profile
 - ✅ Attention Indicators Visual Hierarchy — left border accent (4px) with color/icon differentiation for 3 urgency levels (interview-soon/sent-stale/draft-old)
 - ✅ Dynamic Sorting on Stat Filters — clicking attention/active/responses stat cards bubbles matching apps to top with priority-based sub-sorting
+- ✅ **RLS Permanent Solution (Jan 2026)** — 29 secure policies, middleware token auto-refresh, profile data persistence, GDPR-compliant user isolation
+
+### Security & Monitoring
+
+**RLS Validation Protocol** (Implemented Jan 2026)
+
+| Check | Frequency | Action on Failure |
+|-------|-----------|-------------------|
+| Profile data persistence | Post-deployment | Rollback + investigation |
+| RLS policy violations | Daily (Supabase logs) | Immediate security review |
+| Session timeout rate | Weekly | Adjust token expiry |
+| PII in logs | Pre-deployment (code audit) | Block deployment |
+| User data isolation | Weekly (random sampling) | Security audit |
+
+**Monitoring Dashboards**:
+- Supabase: `postgres-logs` filtered by error codes `42501`, `PGRST301`
+- Error tracking: Look for "RLS" or "permission denied" patterns
+- User feedback: Monitor for "data loss" or "logout" complaints
+
+**Validation Tests** (see `TESTS-VALIDATION-RLS.md`):
+1. Profile persistence after refresh
+2. Profile persistence after deployment
+3. User isolation (no cross-user access)
+4. No logout after token expiry
+5. New user profile creation
+
+**Success Criteria** (7-day window):
+- Zero profile data loss reports
+- <1% RLS error rate
+- Zero unauthorized data access
+- 100% profile load success rate
 
 ### Future Roadmap
 1. **Job Scraping Integration** - Auto-import from LinkedIn, Indeed, etc.

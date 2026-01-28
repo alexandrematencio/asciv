@@ -13,7 +13,18 @@ Avant de commencer les tests, vérifier :
 - [x] RLS policies sécurisées (29 policies validées dans Supabase)
 - [x] Tables `user_profiles` et `role_profiles` existent
 - [x] Schema à jour dans le code
-- [ ] **Code déployé sur Vercel** ← À FAIRE MAINTENANT
+- [x] Code pushé sur GitHub (commits 3738be0 + e22c2ac)
+- [ ] **Déploiement Vercel terminé** ← Attendre 2-3 minutes
+
+### Vérifier le déploiement Vercel
+
+1. Ouvrir [Vercel Dashboard](https://vercel.com/dashboard)
+2. Cliquer sur le projet "asciv" (ou nom du projet)
+3. Vérifier qu'un nouveau déploiement est en cours pour le commit `e22c2ac`
+4. Attendre que le status passe à "Ready" (✅)
+5. Cliquer sur "Visit" pour confirmer que le site est accessible
+
+**Une fois le déploiement terminé**, cocher la case ci-dessus et commencer les tests.
 
 ---
 
