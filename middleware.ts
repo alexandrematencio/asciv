@@ -29,13 +29,12 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  // Refresh session to avoid logout on token expiry
+  // getSession() auto-refreshes if token expired but refresh token valid
+  // This prevents users from being logged out after deployments
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = session?.user ?? null;
 
   const { pathname } = request.nextUrl;
 

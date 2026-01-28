@@ -107,13 +107,51 @@ ALTER TABLE cover_letters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE status_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE application_tracking ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies (for now, allow all - you can add auth later)
-CREATE POLICY "Allow all operations on templates" ON templates FOR ALL USING (true);
-CREATE POLICY "Allow all operations on applications" ON applications FOR ALL USING (true);
-CREATE POLICY "Allow all operations on cv_versions" ON cv_versions FOR ALL USING (true);
-CREATE POLICY "Allow all operations on cover_letters" ON cover_letters FOR ALL USING (true);
-CREATE POLICY "Allow all operations on status_history" ON status_history FOR ALL USING (true);
-CREATE POLICY "Allow all operations on application_tracking" ON application_tracking FOR ALL USING (true);
+-- RLS Policies (proper user isolation for GDPR compliance)
+
+-- Templates (user_id is TEXT, need cast until migrated to UUID)
+CREATE POLICY "Users can read shared and own templates"
+  ON templates FOR SELECT USING (user_id IS NULL OR user_id = auth.uid()::text);
+CREATE POLICY "Users can create templates"
+  ON templates FOR INSERT WITH CHECK (user_id = auth.uid()::text);
+CREATE POLICY "Users can update own templates"
+  ON templates FOR UPDATE USING (user_id = auth.uid()::text);
+CREATE POLICY "Users can delete own templates"
+  ON templates FOR DELETE USING (user_id = auth.uid()::text);
+
+-- Applications (user_id is TEXT)
+CREATE POLICY "Users can read own applications"
+  ON applications FOR SELECT USING (user_id = auth.uid()::text);
+CREATE POLICY "Users can create applications"
+  ON applications FOR INSERT WITH CHECK (user_id = auth.uid()::text);
+CREATE POLICY "Users can update own applications"
+  ON applications FOR UPDATE USING (user_id = auth.uid()::text);
+CREATE POLICY "Users can delete own applications"
+  ON applications FOR DELETE USING (user_id = auth.uid()::text);
+
+-- CV Versions (check via parent application)
+CREATE POLICY "Users can manage CVs for own applications"
+  ON cv_versions FOR ALL USING (
+    application_id IN (SELECT id FROM applications WHERE user_id = auth.uid()::text)
+  );
+
+-- Cover Letters (check via parent application)
+CREATE POLICY "Users can manage cover letters for own applications"
+  ON cover_letters FOR ALL USING (
+    application_id IN (SELECT id FROM applications WHERE user_id = auth.uid()::text)
+  );
+
+-- Status History (check via parent application)
+CREATE POLICY "Users can manage status for own applications"
+  ON status_history FOR ALL USING (
+    application_id IN (SELECT id FROM applications WHERE user_id = auth.uid()::text)
+  );
+
+-- Application Tracking (check via parent application)
+CREATE POLICY "Users can manage tracking for own applications"
+  ON application_tracking FOR ALL USING (
+    application_id IN (SELECT id FROM applications WHERE user_id = auth.uid()::text)
+  );
 
 -- ============================================
 -- JOB INTELLIGENCE ENGINE TABLES
@@ -252,3 +290,88 @@ CREATE INDEX IF NOT EXISTS idx_job_offers_user_status ON job_offers(user_id, sta
 CREATE INDEX IF NOT EXISTS idx_job_offers_overall_score ON job_offers(user_id, overall_score DESC);
 CREATE INDEX IF NOT EXISTS idx_job_preferences_user_id ON job_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_job_analysis_feedback_job_offer_id ON job_analysis_feedback(job_offer_id);
+
+-- ============================================
+-- USER PROFILE TABLES
+-- ============================================
+
+-- User Profiles (main profile data)
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- Personal info
+  full_name TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '',
+  phone TEXT,
+  date_of_birth TEXT,
+  city TEXT,
+  country TEXT,
+
+  -- Professional
+  professional_summary TEXT,
+
+  -- JSON arrays for complex data
+  education JSONB DEFAULT '[]'::jsonb,
+  work_experience JSONB DEFAULT '[]'::jsonb,
+  skills JSONB DEFAULT '[]'::jsonb,
+  certifications JSONB DEFAULT '[]'::jsonb,
+  awards JSONB DEFAULT '[]'::jsonb,
+  languages JSONB DEFAULT '[]'::jsonb,
+  affiliations JSONB DEFAULT '[]'::jsonb,
+  volunteer_experience JSONB DEFAULT '[]'::jsonb,
+  portfolio_links JSONB DEFAULT '[]'::jsonb,
+
+  -- Metadata
+  profile_completeness INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Role Profiles (job-specific CV variations)
+CREATE TABLE IF NOT EXISTS role_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- Identification
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT DEFAULT '🎯',
+  color TEXT DEFAULT '#6366f1',
+
+  -- Customization
+  custom_summary TEXT,
+  selected_experience_ids TEXT[] DEFAULT '{}',
+  experience_order TEXT[] DEFAULT '{}',
+  selected_skill_ids TEXT[] DEFAULT '{}',
+  skill_priority TEXT[] DEFAULT '{}',
+  selected_education_ids TEXT[] DEFAULT '{}',
+  selected_certification_ids TEXT[] DEFAULT '{}',
+  additional_skills JSONB DEFAULT '[]'::jsonb,
+  custom_achievements JSONB DEFAULT '[]'::jsonb,
+
+  -- Status
+  is_default BOOLEAN DEFAULT FALSE,
+  usage_count INTEGER DEFAULT 0,
+  last_used_at TIMESTAMPTZ,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE role_profiles ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies (proper user isolation)
+CREATE POLICY "Users can manage their own profile"
+  ON user_profiles FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own role profiles"
+  ON role_profiles FOR ALL USING (auth.uid() = user_id);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_role_profiles_user_id ON role_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_role_profiles_is_default
+  ON role_profiles(user_id, is_default) WHERE is_default = true;
