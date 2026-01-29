@@ -36,6 +36,9 @@ function JobsPageContent() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
 
+  // Stat card filter state
+  const [activeStatFilter, setActiveStatFilter] = useState<'goodMatches' | 'warning' | 'saved' | null>(null);
+
   // Close user menu and mobile nav when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -245,6 +248,30 @@ REQUIREMENTS:
     }
   };
 
+  // Helper: check if job matches the active stat filter
+  const isMatchingStatFilter = (job: JobOffer): boolean => {
+    if (!activeStatFilter) return true;
+    if (activeStatFilter === 'goodMatches') return job.overallScore !== null && job.overallScore >= 70;
+    if (activeStatFilter === 'warning') return job.isBlocked;
+    if (activeStatFilter === 'saved') return job.status === 'saved';
+    return true;
+  };
+
+  // Sort jobs: when a stat filter is active, bring matching jobs to the top
+  const sortedJobOffers = [...jobOffers].sort((a, b) => {
+    // When a stat filter is active, bring matching jobs to the top
+    if (activeStatFilter) {
+      const aMatches = isMatchingStatFilter(a);
+      const bMatches = isMatchingStatFilter(b);
+
+      if (aMatches && !bMatches) return -1;
+      if (!aMatches && bMatches) return 1;
+    }
+
+    // Otherwise maintain original order (already sorted by context)
+    return 0;
+  });
+
   return (
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors">
       {/* Header */}
@@ -398,10 +425,15 @@ REQUIREMENTS:
             </div>
           </div>
 
-          <div className="bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-colors">
+          <button
+            onClick={() => setActiveStatFilter(prev => prev === 'goodMatches' ? null : 'goodMatches')}
+            className={`bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] text-left ${
+              activeStatFilter === 'goodMatches' ? 'ring-2 ring-success-500 bg-success-50/50 dark:bg-success-900/10' : ''
+            }`}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-success-100 dark:bg-success-900/30 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-success-600 dark:text-success-400" />
+                <TrendingUp className={`w-5 h-5 ${activeStatFilter === 'goodMatches' ? 'text-success-500' : 'text-success-600 dark:text-success-400'}`} />
               </div>
               <div>
                 <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
@@ -410,12 +442,17 @@ REQUIREMENTS:
                 <p className="text-sm text-primary-500 dark:text-primary-400">Good Matches</p>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-colors">
+          <button
+            onClick={() => setActiveStatFilter(prev => prev === 'warning' ? null : 'warning')}
+            className={`bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] text-left ${
+              activeStatFilter === 'warning' ? 'ring-2 ring-warning-500 bg-warning-50/50 dark:bg-warning-900/10' : ''
+            }`}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-warning-100 dark:bg-warning-900/30 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400" />
+                <AlertTriangle className={`w-5 h-5 ${activeStatFilter === 'warning' ? 'text-warning-500' : 'text-warning-600 dark:text-warning-400'}`} />
               </div>
               <div>
                 <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
@@ -424,12 +461,17 @@ REQUIREMENTS:
                 <p className="text-sm text-primary-500 dark:text-primary-400">Warning</p>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-colors">
+          <button
+            onClick={() => setActiveStatFilter(prev => prev === 'saved' ? null : 'saved')}
+            className={`bg-white dark:bg-primary-800 rounded-xl border border-primary-200 dark:border-primary-700 p-4 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.01] text-left ${
+              activeStatFilter === 'saved' ? 'ring-2 ring-accent-500 bg-accent-50/50 dark:bg-accent-900/10' : ''
+            }`}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
-                <Star className="w-5 h-5 text-accent-600 dark:text-accent-400" />
+                <Star className={`w-5 h-5 ${activeStatFilter === 'saved' ? 'text-accent-500' : 'text-accent-600 dark:text-accent-400'}`} />
               </div>
               <div>
                 <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
@@ -438,7 +480,7 @@ REQUIREMENTS:
                 <p className="text-sm text-primary-500 dark:text-primary-400">Saved</p>
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Quick Actions */}
@@ -472,7 +514,7 @@ REQUIREMENTS:
 
         {/* Job Offers List */}
         <JobOffersList
-          jobs={jobOffers}
+          jobs={sortedJobOffers}
           loading={jobOffersLoading}
           filters={filters}
           onFiltersChange={handleFiltersChange}

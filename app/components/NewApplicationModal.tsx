@@ -93,6 +93,11 @@ export default function NewApplicationModal({
   const [jobInputMode, setJobInputMode] = useState<'manual' | 'import'>('manual');
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
+  const [jobLocation, setJobLocation] = useState('');
+  const [jobRemoteType, setJobRemoteType] = useState<'full_remote' | 'hybrid' | 'on_site' | ''>('');
+  const [jobSalary, setJobSalary] = useState('');
+  const [jobSkills, setJobSkills] = useState('');
+  const [jobPerks, setJobPerks] = useState('');
   const [useUrl, setUseUrl] = useState(false);
   const [jobDescription, setJobDescription] = useState('');
   const [jobUrl, setJobUrl] = useState('');
@@ -735,6 +740,11 @@ export default function NewApplicationModal({
     setJobInputMode('manual');
     setCompany('');
     setRole('');
+    setJobLocation('');
+    setJobRemoteType('');
+    setJobSalary('');
+    setJobSkills('');
+    setJobPerks('');
     setUseUrl(false);
     setJobDescription('');
     setJobUrl('');
@@ -779,6 +789,39 @@ export default function NewApplicationModal({
       if (jobInputMode === 'manual') {
         if (!useUrl && !jobDescription.trim()) return;
         if (useUrl && !jobUrl.trim()) return;
+
+        // Create parsedJobContext from manual fields
+        const manualContext: ParsedJobContext = {
+          title: role.trim() || null,
+          company: company.trim() || null,
+          location: jobLocation.trim() || null,
+          salaryMin: null,
+          salaryMax: null,
+          salaryCurrency: null,
+          presenceType: jobRemoteType || null,
+          contractType: null,
+          requiredSkills: jobSkills.trim() ? jobSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
+          niceToHaveSkills: [],
+          perks: jobPerks.trim() ? jobPerks.split(',').map(p => p.trim()).filter(Boolean) : [],
+          matchedSkills: [],
+          missingSkills: [],
+          skillsMatchPercent: 0,
+        };
+
+        // Parse salary if provided
+        if (jobSalary.trim()) {
+          const salaryMatch = jobSalary.match(/(\d+)[-\s]*(?:to|à|-)\s*(\d+)k?\s*([€$£]|eur|usd|gbp)?/i);
+          if (salaryMatch) {
+            manualContext.salaryMin = parseInt(salaryMatch[1]) * 1000;
+            manualContext.salaryMax = parseInt(salaryMatch[2]) * 1000;
+            const currency = salaryMatch[3]?.toLowerCase();
+            manualContext.salaryCurrency = currency === '$' || currency === 'usd' ? 'USD' :
+                                          currency === '£' || currency === 'gbp' ? 'GBP' :
+                                          'EUR';
+          }
+        }
+
+        setParsedJobContext(manualContext);
       } else {
         // Import mode: importText must exist, and it becomes the jobDescription
         if (!importText.trim()) return;
@@ -1009,6 +1052,74 @@ export default function NewApplicationModal({
                       onChange={(e) => setRole(e.target.value)}
                       placeholder="e.g., Senior Product Designer"
                       className="input-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={jobLocation}
+                      onChange={(e) => setJobLocation(e.target.value)}
+                      placeholder="e.g., Paris, France or Remote"
+                      className="input-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Work Type
+                    </label>
+                    <select
+                      value={jobRemoteType}
+                      onChange={(e) => setJobRemoteType(e.target.value as typeof jobRemoteType)}
+                      className="input-primary"
+                    >
+                      <option value="">Select work type...</option>
+                      <option value="full_remote">Full Remote</option>
+                      <option value="hybrid">Hybrid</option>
+                      <option value="on_site">On-site</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Salary Range
+                    </label>
+                    <input
+                      type="text"
+                      value={jobSalary}
+                      onChange={(e) => setJobSalary(e.target.value)}
+                      placeholder="e.g., 60-80k€/year or $150-180k/year"
+                      className="input-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Required Skills
+                    </label>
+                    <textarea
+                      value={jobSkills}
+                      onChange={(e) => setJobSkills(e.target.value)}
+                      placeholder="e.g., React, TypeScript, Figma, 5+ years experience..."
+                      rows={3}
+                      className="textarea-primary text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Perks & Benefits
+                    </label>
+                    <textarea
+                      value={jobPerks}
+                      onChange={(e) => setJobPerks(e.target.value)}
+                      placeholder="e.g., Health insurance, Remote work, Stock options, Learning budget..."
+                      rows={3}
+                      className="textarea-primary text-sm"
                     />
                   </div>
 
@@ -2047,7 +2158,7 @@ Requirements:
                   <label className="block text-sm font-medium text-primary-700 dark:text-primary-300">
                     Key Projects (Optional)
                   </label>
-                  {(jobDescription || jobUrl) && profile?.certifications?.length || profile?.awards?.length ? (
+                  {(jobDescription || jobUrl) ? (
                     <button
                       type="button"
                       onClick={async () => {

@@ -1622,15 +1622,16 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                 activeStatFilter === 'attention' ? 'ring-2 ring-warning-500 bg-warning-50/50 dark:bg-warning-900/10' : ''
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">Attention</span>
-                <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'attention' ? 'text-warning-500' : 'text-primary-400'}`} aria-hidden="true" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
-                {needsAttention}
-              </div>
-              <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
-                {needsAttention === 0 ? 'All clear' : `${needsAttention} to review`}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-warning-100 dark:bg-warning-900/30 rounded-lg">
+                  <Bell className={`w-5 h-5 ${activeStatFilter === 'attention' ? 'text-warning-500' : 'text-warning-600 dark:text-warning-400'}`} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
+                    {needsAttention}
+                  </p>
+                  <p className="text-sm text-primary-500 dark:text-primary-400">Attention</p>
+                </div>
               </div>
             </button>
 
@@ -1641,15 +1642,16 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                 activeStatFilter === 'active' ? 'ring-2 ring-info-500 bg-info-50/50 dark:bg-info-900/10' : ''
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-info-600 dark:text-info-400 uppercase tracking-wide">Active</span>
-                <Activity className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'active' ? 'text-info-500' : 'text-info-500'}`} aria-hidden="true" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
-                {inProgressCount}
-              </div>
-              <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
-                {daysSinceActivity !== null ? `Last ${daysSinceActivity}d ago` : 'No activity'}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-info-100 dark:bg-info-900/30 rounded-lg">
+                  <Activity className={`w-5 h-5 ${activeStatFilter === 'active' ? 'text-info-500' : 'text-info-600 dark:text-info-400'}`} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
+                    {inProgressCount}
+                  </p>
+                  <p className="text-sm text-primary-500 dark:text-primary-400">Active</p>
+                </div>
               </div>
             </button>
 
@@ -1660,15 +1662,16 @@ Génère maintenant la lettre de motivation en respectant STRICTEMENT le format:
                 activeStatFilter === 'responses' ? 'ring-2 ring-success-500 bg-success-50/50 dark:bg-success-900/10' : ''
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-success-600 dark:text-success-400 uppercase tracking-wide">Responses</span>
-                <CheckCircle className={`w-4 h-4 sm:w-5 sm:h-5 ${activeStatFilter === 'responses' ? 'text-success-500' : 'text-success-500'}`} aria-hidden="true" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-semibold text-primary-900 dark:text-primary-50 mb-1">
-                {responsesReceived.length}
-              </div>
-              <div className="text-xs text-primary-500 dark:text-primary-400 truncate">
-                {responsesReceived.length === 0 ? 'Waiting' : `${interviewResponses} int. ${decisionResponses} dec.`}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-success-100 dark:bg-success-900/30 rounded-lg">
+                  <CheckCircle className={`w-5 h-5 ${activeStatFilter === 'responses' ? 'text-success-500' : 'text-success-600 dark:text-success-400'}`} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-primary-900 dark:text-primary-50">
+                    {responsesReceived.length}
+                  </p>
+                  <p className="text-sm text-primary-500 dark:text-primary-400">Responses</p>
+                </div>
               </div>
             </button>
           </div>

@@ -56,7 +56,16 @@ export default function JobOffersList({
   };
 
   const handleSortChange = (sortBy: 'score' | 'date' | 'company') => {
-    const newOrder = filters.sortBy === sortBy && filters.sortOrder === 'desc' ? 'asc' : 'desc';
+    // For company, default to A→Z (asc) on first click, then toggle
+    // For date/score, default to Recent/High (desc) on first click, then toggle
+    let newOrder: 'asc' | 'desc';
+    if (filters.sortBy === sortBy) {
+      // Toggle current order
+      newOrder = filters.sortOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+      // First click: company defaults to asc (A→Z), others to desc (Recent/High)
+      newOrder = sortBy === 'company' ? 'asc' : 'desc';
+    }
     onFiltersChange({ ...filters, sortBy, sortOrder: newOrder });
   };
 
@@ -124,7 +133,7 @@ export default function JobOffersList({
                 : 'text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-700'
             }`}
           >
-            Date
+            Date {filters.sortBy === 'date' && `(${filters.sortOrder === 'asc' ? 'Oldest' : 'Recent'})`}
             {filters.sortBy === 'date' && <SortIcon className="w-3 h-3" />}
           </button>
           <button
@@ -135,7 +144,7 @@ export default function JobOffersList({
                 : 'text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-700'
             }`}
           >
-            Score
+            Score {filters.sortBy === 'score' && `(${filters.sortOrder === 'asc' ? 'Low' : 'High'})`}
             {filters.sortBy === 'score' && <SortIcon className="w-3 h-3" />}
           </button>
           <button
@@ -146,7 +155,7 @@ export default function JobOffersList({
                 : 'text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-700'
             }`}
           >
-            Company
+            Company {filters.sortBy === 'company' && `(${filters.sortOrder === 'asc' ? 'A→Z' : 'Z→A'})`}
             {filters.sortBy === 'company' && <SortIcon className="w-3 h-3" />}
           </button>
         </div>
