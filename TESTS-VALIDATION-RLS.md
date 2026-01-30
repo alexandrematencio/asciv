@@ -48,7 +48,7 @@ Avant de commencer les tests, vérifier :
 ✅ Toutes les modifications doivent être visibles après le refresh
 
 ### Résultat Réel
-- [ ] ✅ PASS
+- [✅ passed] ✅ PASS
 - [ ] ❌ FAIL - Décrire le problème :
 
 ---
