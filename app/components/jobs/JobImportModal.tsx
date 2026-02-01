@@ -262,20 +262,34 @@ export default function JobImportModal({ isOpen, onClose, onJobImported, mode: i
               </div>
 
               {mode === 'url' && (
-                <div>
-                  <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">
-                    Job Posting URL
-                  </label>
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com/job/..."
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
-                  />
-                  <p className="mt-1 text-xs text-primary-500 dark:text-primary-400">
-                    The job posting content will be automatically fetched and parsed.
-                  </p>
+                <div className="space-y-4">
+                  {/* Warning about job boards */}
+                  <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-700/50 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-warning-500 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-warning-700 dark:text-warning-300">
+                      <p className="font-medium mb-1">Some job boards may not work</p>
+                      <p className="text-warning-600 dark:text-warning-400">
+                        LinkedIn, Indeed, and some other platforms restrict automated access to their job postings.
+                        If this fails, use the <strong>Paste</strong> option and copy-paste the job description manually.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">
+                      Job Posting URL
+                    </label>
+                    <input
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://careers.company.com/jobs/..."
+                      className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
+                    />
+                    <p className="mt-1 text-xs text-primary-500 dark:text-primary-400">
+                      Works best with company career pages. May not work with LinkedIn, Indeed, or Glassdoor.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -289,7 +303,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported, mode: i
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Paste the full job description here..."
                     rows={12}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77] resize-none font-mono text-sm"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 resize-none font-mono text-sm"
                   />
                 </div>
               )}
@@ -331,7 +345,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported, mode: i
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
                   />
                 </div>
                 <div>
@@ -342,7 +356,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported, mode: i
                     type="text"
                     value={editedCompany}
                     onChange={(e) => setEditedCompany(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
+                    className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
                   />
                 </div>
               </div>
@@ -356,7 +370,7 @@ export default function JobImportModal({ isOpen, onClose, onJobImported, mode: i
                   value={editedLocation}
                   onChange={(e) => setEditedLocation(e.target.value)}
                   placeholder="e.g., Paris, France"
-                  className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77]"
+                  className="w-full px-3 py-2 bg-white dark:bg-primary-900 border border-primary-200 dark:border-primary-600 rounded-lg text-primary-900 dark:text-primary-100 placeholder-primary-400 dark:placeholder-primary-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
                 />
               </div>
 

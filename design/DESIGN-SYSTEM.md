@@ -1,7 +1,19 @@
 # DESIGN-SYSTEM.md – UX Priorities & Component Standards
 
-> Ce fichier définit les **priorités UX** et **standards de composants**. 
-> Pour l'identité visuelle et le ton, voir BRAND-IDENTITY.md.
+> Ce fichier définit les **priorités UX** et **protocoles de design**.
+
+---
+
+## 📚 Fichiers du Design System
+
+| Fichier | Contenu | Quand l'utiliser |
+|---------|---------|------------------|
+| `DESIGN-SYSTEM.md` | Priorités UX, patterns interdits, protocoles | Décisions UX, validation de features |
+| `BRAND-IDENTITY.md` | Personnalité, ton, direction visuelle | Choix esthétiques, copywriting |
+| `DESIGN-TOKENS.md` | Couleurs, typo, spacing, shadows | Styling, Figma/Stitch, implémentation |
+| `COMPONENTS.md` | Catalogue composants + états + exemples | Développement UI, design tools |
+
+**Pour les outils AI (Stitch, Figma Make)** : Référencer `DESIGN-TOKENS.md` + `COMPONENTS.md`.
 
 ---
 
@@ -180,8 +192,14 @@ Seuil minimum : **70/100** pour valider une feature.
 
 ---
 
-## 🎨 Référence visuelle
+## 🎨 Références
 
-Pour les aspects visuels (palette, typo, ton), voir `BRAND-IDENTITY.md`.
+| Besoin | Fichier à consulter |
+|--------|---------------------|
+| Palette, typo, spacing, shadows | `DESIGN-TOKENS.md` |
+| Composants UI, variantes, états | `COMPONENTS.md` |
+| Ton, personnalité, direction visuelle | `BRAND-IDENTITY.md` |
 
-Les deux fichiers doivent être lus ensemble pour toute tâche UX/UI.
+---
+
+*Dernière mise à jour : 2026-01-31*

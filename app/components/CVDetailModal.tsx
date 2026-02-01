@@ -748,7 +748,7 @@ export default function CVDetailModal({
               <div className="px-4 pt-4 pb-2">
                 <button
                   onClick={createNewVersion}
-                  className="w-full px-4 py-3 bg-[#4CAF9B] text-white rounded-xl hover:bg-[#3D9A89] font-semibold transition-colors shadow-md"
+                  className="w-full px-4 py-3 bg-success-600 text-white rounded-xl hover:bg-success-700 font-semibold transition-colors shadow-md"
                 >
                   <Plus className="w-4 h-4 inline-block mr-1" />Create New Version
                 </button>
@@ -918,7 +918,7 @@ export default function CVDetailModal({
                   <div className="px-4 pt-4 pb-2">
                     <button
                       onClick={() => setShowCoverLetterModal(true)}
-                      className="w-full px-4 py-3 bg-[#4CAF9B] text-white rounded-xl hover:bg-[#3D9A89] font-semibold transition-colors shadow-md"
+                      className="w-full px-4 py-3 bg-success-600 text-white rounded-xl hover:bg-success-700 font-semibold transition-colors shadow-md"
                     >
                       <FilePlus className="w-4 h-4 inline-block mr-1" />Generate New Cover Letter
                     </button>
@@ -1219,7 +1219,7 @@ export default function CVDetailModal({
             {activeTab === 'cv' && isEditing && (
               <>
                 <button onClick={handleCancel} className="flex-1 px-4 py-2 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-200 rounded-lg text-sm font-medium transition-colors">Cancel</button>
-                <button onClick={handleSave} className="flex-1 px-4 py-2 bg-[#4CAF9B] text-white rounded-lg text-sm font-medium transition-colors">Save</button>
+                <button onClick={handleSave} className="flex-1 px-4 py-2 bg-success-600 text-white rounded-lg text-sm font-medium transition-colors hover:bg-success-700">Save</button>
               </>
             )}
             {activeTab === 'cover-letter' && !isCoverLetterEditing && (
@@ -1236,7 +1236,7 @@ export default function CVDetailModal({
             {activeTab === 'cover-letter' && isCoverLetterEditing && (
               <>
                 <button onClick={handleCoverLetterCancel} className="flex-1 px-4 py-2 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-200 rounded-lg text-sm font-medium transition-colors">Cancel</button>
-                <button onClick={handleCoverLetterSave} className="flex-1 px-4 py-2 bg-[#4CAF9B] text-white rounded-lg text-sm font-medium transition-colors">Save</button>
+                <button onClick={handleCoverLetterSave} className="flex-1 px-4 py-2 bg-success-600 text-white rounded-lg text-sm font-medium transition-colors hover:bg-success-700">Save</button>
               </>
             )}
             {canAnalyzeMatching && !isEditing && !isCoverLetterEditing && (
@@ -1262,7 +1262,7 @@ export default function CVDetailModal({
                     <textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full h-[300px] sm:h-[600px] p-4 border-2 border-gray-200 dark:border-primary-600 rounded-xl font-mono text-sm resize-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77] bg-white dark:bg-primary-900 text-primary-900 dark:text-primary-100"
+                      className="w-full h-[300px] sm:h-[600px] p-4 border-2 border-gray-200 dark:border-primary-600 rounded-xl font-mono text-sm resize-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 bg-white dark:bg-primary-900 text-primary-900 dark:text-primary-100"
                     />
                   </div>
                 </div>
@@ -1474,7 +1474,7 @@ export default function CVDetailModal({
                     <textarea
                       value={coverLetterEditContent}
                       onChange={(e) => setCoverLetterEditContent(e.target.value)}
-                      className="w-full h-[300px] sm:h-[600px] p-4 border-2 border-gray-200 dark:border-primary-600 rounded-xl font-mono text-sm resize-none focus:ring-2 focus:ring-[#4A5F77] focus:border-[#4A5F77] bg-white dark:bg-primary-900 text-primary-900 dark:text-primary-100"
+                      className="w-full h-[300px] sm:h-[600px] p-4 border-2 border-gray-200 dark:border-primary-600 rounded-xl font-mono text-sm resize-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 bg-white dark:bg-primary-900 text-primary-900 dark:text-primary-100"
                     />
                   </div>
                 ) : (

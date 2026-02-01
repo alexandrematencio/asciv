@@ -115,6 +115,14 @@ Asciv is **not** a job board. It is **not** an application tracker. It is an **A
 6. **Premium** – Worth paying for
 7. **Bienveillant** – User's advocate, not a sales tool
 
+### Brand Colors (from logo)
+
+| Token | Color | Usage |
+|-------|-------|-------|
+| `primary` | Slate | Dominant — texts, structure |
+| `accent` | Blue #1E00FF | Links, interactive elements |
+| `secondary` | Orange #FF4800 | **Major CTAs only** (rare, impactful) |
+
 ### Forbidden Patterns
 
 - Gamification of job applications

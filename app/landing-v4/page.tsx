@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -15,8 +14,7 @@ import {
   CheckCircle,
   Twitter,
   Linkedin,
-  Github,
-  X
+  Github
 } from 'lucide-react';
 
 // Text reveal on scroll
@@ -63,7 +61,7 @@ function AnimatedStat({
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [count, setCount] = useState(0);
-  const duration = 2000;
+  const duration = 2000; // 2 seconds
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -141,19 +139,9 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-// Main landing content
-function LandingContent() {
-  const searchParams = useSearchParams();
+export default function LandingV4() {
   const [scrollY, setScrollY] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showDeletedMessage, setShowDeletedMessage] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('deleted') === 'true') {
-      setShowDeletedMessage(true);
-      setTimeout(() => setShowDeletedMessage(false), 10000);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -167,23 +155,7 @@ function LandingContent() {
 
   return (
     <div className="min-h-screen bg-white overflow-hidden">
-      {/* Account Deleted Message */}
-      {showDeletedMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-primary-900 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-4 max-w-md">
-          <div className="flex-1">
-            <p className="font-medium">Account deleted</p>
-            <p className="text-sm text-white/70">Your account and all data have been permanently removed.</p>
-          </div>
-          <button
-            onClick={() => setShowDeletedMessage(false)}
-            className="p-1 hover:bg-white/10 rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      {/* Subtle gradient orbs with parallax */}
+      {/* Subtle gradient orbs with parallax - brand colors */}
       <div
         className="fixed top-1/4 -left-48 w-[600px] h-[600px] rounded-full blur-3xl pointer-events-none"
         style={{
@@ -202,7 +174,7 @@ function LandingContent() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/landing" className="flex items-center gap-3">
+          <Link href="/landing-v4" className="flex items-center gap-3">
             <Image src="/logo.svg" alt="Asciv" width={40} height={20} className="h-5 w-auto" />
             <span className="text-xl font-semibold text-primary-900">Asciv</span>
           </Link>
@@ -224,7 +196,7 @@ function LandingContent() {
       <section className="pt-32 pb-24 px-6 min-h-screen flex items-center relative">
         <div className="max-w-5xl mx-auto">
           <div className="text-center">
-            {/* Glass badge */}
+            {/* Glass badge - V2 punchiness */}
             <div
               className={`inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-primary-200/50 text-primary-700 rounded-full text-sm font-medium mb-12 shadow-sm transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             >
@@ -237,6 +209,7 @@ function LandingContent() {
             >
               Know if a job fits
               <br />
+              {/* Accent color from logo */}
               <span className="text-accent-500">
                 before you apply.
               </span>
@@ -253,7 +226,7 @@ function LandingContent() {
             <div
               className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             >
-              {/* Primary CTA - Orange */}
+              {/* Primary CTA - Orange (secondary) for maximum impact */}
               <Link
                 href="/signup"
                 className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-secondary-500 text-white rounded-xl transition-all hover:bg-secondary-600 hover:scale-[1.02] shadow-lg shadow-secondary-500/25"
@@ -272,13 +245,28 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section - Animated Counters */}
       <section className="py-32 px-6 bg-primary-50 relative">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-12 text-center">
-            <AnimatedStat value={92} suffix="%" label="Skills accurately matched" delay={0} />
-            <AnimatedStat value={3} suffix="min" label="To analyze any job" delay={150} />
-            <AnimatedStat value={10} suffix="x" label="Faster applications" delay={300} />
+            <AnimatedStat
+              value={92}
+              suffix="%"
+              label="Skills accurately matched"
+              delay={0}
+            />
+            <AnimatedStat
+              value={3}
+              suffix="min"
+              label="To analyze any job"
+              delay={150}
+            />
+            <AnimatedStat
+              value={10}
+              suffix="x"
+              label="Faster applications"
+              delay={300}
+            />
           </div>
           <p className="text-center text-primary-400 text-sm mt-8">
             Based on skills comparison between user profiles and job requirements
@@ -370,7 +358,7 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* Features Grid with Glass Hover - V2 punchiness */}
       <section className="py-32 px-6 relative">
         <div className="max-w-5xl mx-auto">
           <RevealText>
@@ -387,6 +375,7 @@ function LandingContent() {
               { icon: Briefcase, title: 'Role Profiles', desc: 'Create distinct professional identities for different job types.' },
             ].map((feature, i) => (
               <RevealText key={i} delay={i * 100}>
+                {/* Glass hover effect - V2 punchiness */}
                 <div className="flex gap-5 p-4 -m-4 rounded-2xl transition-all duration-300 hover:bg-white/60 hover:backdrop-blur-sm hover:shadow-lg hover:shadow-primary-200/50">
                   <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                     <feature.icon className="w-6 h-6 text-primary-600" />
@@ -432,8 +421,9 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section with subtle orb */}
       <section className="py-32 px-6 relative">
+        {/* Subtle orb behind CTA - brand blue */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full blur-3xl pointer-events-none"
           style={{
@@ -458,6 +448,7 @@ function LandingContent() {
 
           <RevealText delay={200}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* Primary CTA - Orange */}
               <Link
                 href="/signup"
                 className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-secondary-500 text-white rounded-xl transition-all hover:bg-secondary-600 hover:scale-[1.02] shadow-lg shadow-secondary-500/25"
@@ -465,6 +456,7 @@ function LandingContent() {
                 Create free account
                 <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
               </Link>
+              {/* Secondary CTA - Outline (not orange) */}
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center px-10 py-5 text-lg font-medium text-primary-700 border border-primary-200 hover:border-primary-300 hover:bg-primary-50 rounded-xl transition-all"
@@ -476,13 +468,14 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Professional Footer - Exact copy from V3 */}
       <footer className="bg-primary-50 border-t border-primary-100">
         <div className="max-w-6xl mx-auto px-6 py-16">
+          {/* Footer Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            {/* Brand */}
+            {/* Brand Column */}
             <div className="col-span-2 md:col-span-1">
-              <Link href="/landing" className="flex items-center gap-2 mb-4">
+              <Link href="/landing-v4" className="flex items-center gap-2 mb-4">
                 <Image src="/logo.svg" alt="Asciv" width={32} height={16} className="h-4 w-auto" />
                 <span className="text-lg font-semibold text-primary-900">Asciv</span>
               </Link>
@@ -497,6 +490,8 @@ function LandingContent() {
               <ul className="space-y-3 text-sm">
                 <li><FooterLink href="#features">Features</FooterLink></li>
                 <li><FooterLink href="/signup">Get Started</FooterLink></li>
+                <li><FooterLink href="#">Pricing</FooterLink></li>
+                <li><FooterLink href="#">Changelog</FooterLink></li>
               </ul>
             </div>
 
@@ -532,11 +527,13 @@ function LandingContent() {
             </div>
           </div>
 
-          {/* Bottom */}
+          {/* Bottom Bar */}
           <div className="pt-8 border-t border-primary-200 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-primary-400 text-sm">
               © 2026 Asciv. All rights reserved.
             </p>
+
+            {/* Social Links */}
             <div className="flex items-center gap-4">
               <Link
                 href="#"
@@ -563,14 +560,7 @@ function LandingContent() {
           </div>
         </div>
       </footer>
-    </div>
-  );
-}
 
-export default function LandingPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <LandingContent />
-    </Suspense>
+    </div>
   );
 }

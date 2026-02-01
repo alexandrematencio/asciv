@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'cta';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -44,11 +44,11 @@ export default function Button({
       disabled:bg-primary-600
     `,
     success: `
-      bg-[#4CAF9B] text-white
-      hover:bg-[#3D9A89] hover:shadow-md
-      active:bg-[#358779]
-      focus:ring-[#4CAF9B]
-      disabled:bg-[#4CAF9B]
+      bg-success-600 text-white
+      hover:bg-success-700 hover:shadow-md
+      active:bg-success-800
+      focus:ring-success-500
+      disabled:bg-success-600
     `,
     danger: `
       bg-error-600 text-white
@@ -56,6 +56,13 @@ export default function Button({
       active:bg-error-800
       focus:ring-error-500
       disabled:bg-error-600
+    `,
+    cta: `
+      bg-secondary-500 text-white
+      hover:bg-secondary-600 hover:shadow-lg hover:shadow-secondary-500/25
+      active:bg-secondary-700
+      focus:ring-secondary-500
+      disabled:bg-secondary-500
     `,
   };
 

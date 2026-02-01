@@ -533,44 +533,46 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
   };
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onCancel}>
       <div
-        className="bg-white dark:bg-primary-800 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-xl relative"
+        className="bg-white dark:bg-primary-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-error-500/10 hover:bg-error-500/20 dark:bg-error-500/20 dark:hover:bg-error-500/30 transition-all"
+          className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 dark:bg-primary-700/80 backdrop-blur-sm hover:bg-white dark:hover:bg-primary-600 transition-all shadow-sm"
           aria-label="Close editor"
         >
-          <X className="w-5 h-5 text-error-600 dark:text-error-400" aria-hidden="true" />
+          <X className="w-4 h-4 text-primary-600 dark:text-primary-300" aria-hidden="true" />
         </button>
 
         {/* Header */}
-        <div className="bg-accent-600 dark:bg-accent-700 text-white p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold">Edit CV</h2>
-            <p className="text-white/90 text-sm mt-1">
-              {application.company} - {application.role}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 mr-12">
-            <button
-              onClick={handleSave}
-              className="px-6 py-2 bg-white text-accent-600 hover:bg-primary-100 rounded-xl font-semibold transition-colors flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" aria-hidden="true" />
-              Save Changes
-            </button>
+        <div className="bg-gradient-to-r from-primary-900 to-primary-800 text-white px-6 sm:px-8 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Edit CV</h2>
+              <p className="text-white/70 text-sm mt-1 font-medium">
+                {application.company} · {application.role}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 mr-10">
+              <button
+                onClick={handleSave}
+                className="px-5 py-2.5 bg-white text-primary-900 hover:bg-primary-50 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] flex items-center gap-2 shadow-lg"
+              >
+                <Save className="w-4 h-4" aria-hidden="true" />
+                Save
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-primary-50 dark:bg-primary-900">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-8 bg-gradient-to-b from-primary-50 to-white dark:from-primary-900 dark:to-primary-800">
           {/* Personal Info Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 mb-4 flex items-center gap-2">
+          <div className="section-card-cv">
+            <h3 className="section-header-cv">
               <User className="w-5 h-5 text-accent-500" aria-hidden="true" />
               Personal Information
             </h3>
@@ -596,25 +598,25 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
                     value={cvData.personalInfo.name}
                     onChange={(e) => updatePersonalInfo('name', e.target.value)}
                     placeholder="Full Name *"
-                    className="input-primary font-semibold text-lg"
+                    className="input-refined font-semibold text-lg"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <input
                   type="email"
                   value={cvData.personalInfo.email}
                   onChange={(e) => updatePersonalInfo('email', e.target.value)}
                   placeholder="Email *"
-                  className="input-primary"
+                  className="input-refined"
                 />
                 <input
                   type="tel"
                   value={cvData.personalInfo.phone}
                   onChange={(e) => updatePersonalInfo('phone', e.target.value)}
                   placeholder="Phone"
-                  className="input-primary"
+                  className="input-refined"
                 />
               </div>
 
@@ -623,10 +625,10 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
                 value={cvData.personalInfo.location}
                 onChange={(e) => updatePersonalInfo('location', e.target.value)}
                 placeholder="Location (City, Country)"
-                className="input-primary"
+                className="input-refined"
               />
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <input
                   type="number"
                   value={cvData.personalInfo.age || ''}
@@ -634,14 +636,14 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
                   placeholder="Age"
                   min="18"
                   max="99"
-                  className="input-primary"
+                  className="input-refined"
                 />
                 <input
                   type="text"
                   value={cvData.personalInfo.languages || ''}
                   onChange={(e) => updatePersonalInfo('languages', e.target.value)}
                   placeholder="Languages"
-                  className="input-primary col-span-2"
+                  className="input-refined sm:col-span-2"
                 />
               </div>
 
@@ -650,14 +652,14 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
                 value={cvData.personalInfo.portfolio || ''}
                 onChange={(e) => updatePersonalInfo('portfolio', e.target.value)}
                 placeholder="Portfolio / Website URL"
-                className="input-primary"
+                className="input-refined"
               />
             </div>
           </div>
 
           {/* Summary Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 mb-4 flex items-center gap-2">
+          <div className="section-card-cv">
+            <h3 className="section-header-cv">
               <FileText className="w-5 h-5 text-accent-500" aria-hidden="true" />
               Professional Summary
             </h3>
@@ -666,188 +668,190 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
               onChange={(e) => setCvData(prev => ({ ...prev, summary: e.target.value }))}
               placeholder="Write a brief summary of your professional background, key achievements, and career goals..."
               rows={4}
-              className="textarea-primary resize-none"
+              className="textarea-refined"
             />
           </div>
 
           {/* Experience Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-2">
+          <div className="section-card-cv">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-3">
                 <Briefcase className="w-5 h-5 text-accent-500" aria-hidden="true" />
                 Work Experience
               </h3>
               <button
                 onClick={addExperience}
-                className="px-4 py-2 bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-xl hover:bg-success-100 dark:hover:bg-success-900/50 font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-accent-50 dark:bg-accent-900/20 text-accent-600 dark:text-accent-400 rounded-lg hover:bg-accent-100 dark:hover:bg-accent-900/30 font-medium text-sm transition-all hover:scale-[1.02] flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" aria-hidden="true" />
-                Add Experience
+                Add
               </button>
             </div>
 
             <div className="space-y-4">
               {cvData.experiences.map((exp, index) => (
-                <div key={exp.id} className="bg-primary-50 dark:bg-primary-900/50 rounded-xl p-5 pt-2 border-2 border-primary-200 dark:border-primary-700 relative">
+                <div key={exp.id} className="item-card-cv">
                   <button
                     onClick={() => removeExperience(exp.id)}
-                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
+                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
                     aria-label="Remove experience"
                   >
                     <X className="w-4 h-4 text-primary-400 hover:text-error-600 dark:hover:text-error-400 transition-colors" aria-hidden="true" />
                   </button>
 
-                  <div className="space-y-3 mt-4">
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         type="text"
                         value={exp.company}
                         onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
                         placeholder="Company Name *"
-                        className="input-primary font-semibold"
+                        className="input-refined font-medium"
                       />
                       <input
                         type="text"
                         value={exp.title}
                         onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
                         placeholder="Job Title *"
-                        className="input-primary font-semibold"
+                        className="input-refined font-medium"
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
                       <input
                         type="text"
                         value={exp.startDate}
                         onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
-                        placeholder="Start Date (e.g., Sep 2020)"
-                        className="input-primary"
+                        placeholder="Start Date"
+                        className="input-refined"
                       />
                       <input
                         type="text"
                         value={exp.endDate}
                         onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
-                        placeholder="End Date (e.g., Jul 2023)"
+                        placeholder="End Date"
                         disabled={exp.current}
-                        className="input-primary disabled:opacity-50"
+                        className="input-refined disabled:opacity-50"
                       />
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex items-center gap-2 cursor-pointer py-3 sm:py-0">
                         <input
                           type="checkbox"
                           checked={exp.current}
                           onChange={(e) => updateExperience(exp.id, 'current', e.target.checked)}
                           className="w-4 h-4 rounded border-primary-300 dark:border-primary-600 text-accent-600 focus:ring-accent-500"
                         />
-                        <span className="text-sm font-medium text-primary-700 dark:text-primary-300">Currently working here</span>
+                        <span className="text-sm font-medium text-primary-600 dark:text-primary-400">Current role</span>
                       </label>
                     </div>
 
                     <textarea
                       value={exp.description}
                       onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
-                      placeholder="Describe your responsibilities, achievements, and key projects..."
+                      placeholder="Key achievements and responsibilities..."
                       rows={3}
-                      className="textarea-primary resize-none"
+                      className="textarea-refined"
                     />
                   </div>
                 </div>
               ))}
 
               {cvData.experiences.length === 0 && (
-                <div className="text-center py-8 text-primary-500 dark:text-primary-400">
-                  No experiences added yet. Click &quot;Add Experience&quot; to start.
+                <div className="text-center py-12 text-primary-400 dark:text-primary-500">
+                  <Briefcase className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No experiences added yet</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Education Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-2">
+          <div className="section-card-cv">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-3">
                 <GraduationCap className="w-5 h-5 text-accent-500" aria-hidden="true" />
                 Education
               </h3>
               <button
                 onClick={addEducation}
-                className="px-4 py-2 bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-xl hover:bg-success-100 dark:hover:bg-success-900/50 font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-accent-50 dark:bg-accent-900/20 text-accent-600 dark:text-accent-400 rounded-lg hover:bg-accent-100 dark:hover:bg-accent-900/30 font-medium text-sm transition-all hover:scale-[1.02] flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" aria-hidden="true" />
-                Add Education
+                Add
               </button>
             </div>
 
             <div className="space-y-4">
               {cvData.education.map((edu) => (
-                <div key={edu.id} className="bg-primary-50 dark:bg-primary-900/50 rounded-xl p-5 pt-2 border-2 border-primary-200 dark:border-primary-700 relative">
+                <div key={edu.id} className="item-card-cv">
                   <button
                     onClick={() => removeEducation(edu.id)}
-                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
+                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
                     aria-label="Remove education"
                   >
                     <X className="w-4 h-4 text-primary-400 hover:text-error-600 dark:hover:text-error-400 transition-colors" aria-hidden="true" />
                   </button>
 
-                  <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                     <input
                       type="text"
                       value={edu.institution}
                       onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
                       placeholder="Institution *"
-                      className="input-primary font-semibold"
+                      className="input-refined font-medium"
                     />
                     <input
                       type="text"
                       value={edu.degree}
                       onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
                       placeholder="Degree *"
-                      className="input-primary"
+                      className="input-refined"
                     />
                     <input
                       type="text"
                       value={edu.field}
                       onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
                       placeholder="Field of Study"
-                      className="input-primary"
+                      className="input-refined"
                     />
                     <input
                       type="text"
                       value={edu.year}
                       onChange={(e) => updateEducation(edu.id, 'year', e.target.value)}
                       placeholder="Year (e.g., 2020-2024)"
-                      className="input-primary"
+                      className="input-refined"
                     />
                   </div>
                 </div>
               ))}
 
               {cvData.education.length === 0 && (
-                <div className="text-center py-8 text-primary-500 dark:text-primary-400">
-                  No education added yet. Click &quot;Add Education&quot; to start.
+                <div className="text-center py-12 text-primary-400 dark:text-primary-500">
+                  <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No education added yet</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Skills Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 mb-4 flex items-center gap-2">
+          <div className="section-card-cv">
+            <h3 className="section-header-cv">
               <Zap className="w-5 h-5 text-accent-500" aria-hidden="true" />
               Skills
             </h3>
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-3 mb-5">
               <input
                 type="text"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-                placeholder="Add a skill (e.g., Figma, JavaScript, Project Management)"
-                className="input-primary flex-1"
+                placeholder="Add a skill..."
+                className="input-refined flex-1"
               />
               <button
                 onClick={addSkill}
-                className="btn-primary flex items-center gap-2"
+                className="px-5 py-3 bg-accent-600 text-white rounded-xl font-medium text-sm transition-all hover:bg-accent-700 hover:scale-[1.02] flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" aria-hidden="true" />
                 Add
@@ -858,76 +862,78 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
               {cvData.skills.map((skill, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300 rounded-full font-medium flex items-center gap-2"
+                  className="px-3 py-1.5 bg-primary-100 dark:bg-primary-700 text-primary-700 dark:text-primary-300 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors hover:bg-primary-200 dark:hover:bg-primary-600"
                 >
                   <span>{skill}</span>
                   <button
                     onClick={() => removeSkill(skill)}
-                    className="text-accent-400 hover:text-error-600 dark:hover:text-error-400 transition-colors"
+                    className="text-primary-400 hover:text-error-600 dark:hover:text-error-400 transition-colors"
                     aria-label={`Remove ${skill}`}
                   >
-                    <X className="w-4 h-4" aria-hidden="true" />
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
               ))}
             </div>
 
             {cvData.skills.length === 0 && (
-              <div className="text-center py-8 text-primary-500 dark:text-primary-400">
-                No skills added yet. Add your technical and soft skills above.
+              <div className="text-center py-12 text-primary-400 dark:text-primary-500">
+                <Zap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No skills added yet</p>
               </div>
             )}
           </div>
 
           {/* Projects Section */}
-          <div className="bg-white dark:bg-primary-800 rounded-2xl p-6 border-2 border-primary-200 dark:border-primary-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-2">
+          <div className="section-card-cv">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-primary-900 dark:text-primary-50 flex items-center gap-3">
                 <Rocket className="w-5 h-5 text-accent-500" aria-hidden="true" />
                 Key Projects
               </h3>
               <button
                 onClick={addProject}
-                className="px-4 py-2 bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 rounded-xl hover:bg-success-100 dark:hover:bg-success-900/50 font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-accent-50 dark:bg-accent-900/20 text-accent-600 dark:text-accent-400 rounded-lg hover:bg-accent-100 dark:hover:bg-accent-900/30 font-medium text-sm transition-all hover:scale-[1.02] flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" aria-hidden="true" />
-                Add Project
+                Add
               </button>
             </div>
 
             <div className="space-y-4">
               {(cvData.projects || []).map((project) => (
-                <div key={project.id} className="bg-primary-50 dark:bg-primary-900/50 rounded-xl p-5 pt-2 border-2 border-primary-200 dark:border-primary-700 relative">
+                <div key={project.id} className="item-card-cv">
                   <button
                     onClick={() => removeProject(project.id)}
-                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
+                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-error-100 dark:hover:bg-error-900/30 transition-all"
                     aria-label="Remove project"
                   >
                     <X className="w-4 h-4 text-primary-400 hover:text-error-600 dark:hover:text-error-400 transition-colors" aria-hidden="true" />
                   </button>
 
-                  <div className="space-y-3 mt-4">
+                  <div className="space-y-3 mt-2">
                     <input
                       type="text"
                       value={project.name}
                       onChange={(e) => updateProject(project.id, 'name', e.target.value)}
                       placeholder="Project Name *"
-                      className="input-primary font-semibold"
+                      className="input-refined font-medium"
                     />
                     <textarea
                       value={project.description}
                       onChange={(e) => updateProject(project.id, 'description', e.target.value)}
                       placeholder="Brief description with impact metrics..."
                       rows={2}
-                      className="textarea-primary resize-none"
+                      className="textarea-refined"
                     />
                   </div>
                 </div>
               ))}
 
               {(!cvData.projects || cvData.projects.length === 0) && (
-                <div className="text-center py-8 text-primary-500 dark:text-primary-400">
-                  No projects added yet. Click &quot;Add Project&quot; to add key projects.
+                <div className="text-center py-12 text-primary-400 dark:text-primary-500">
+                  <Rocket className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No projects added yet</p>
                 </div>
               )}
             </div>
@@ -935,13 +941,13 @@ export default function CVEditor({ application, onSave, onCancel, onDeleteApplic
 
           {/* Delete Application Section */}
           {onDeleteApplication && (
-            <div className="bg-error-50 dark:bg-error-900/20 border-2 border-error-200 dark:border-error-800 rounded-2xl p-6">
-              <h3 className="text-xl font-semibold text-error-900 dark:text-error-300 mb-2 flex items-center gap-2">
+            <div className="bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-2xl p-5 sm:p-6">
+              <h3 className="text-lg font-semibold text-error-900 dark:text-error-300 mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" aria-hidden="true" />
                 Danger Zone
               </h3>
               <p className="text-sm text-error-700 dark:text-error-400 mb-4">
-                Once you delete this application, there is no going back. This action cannot be undone.
+                This action cannot be undone.
               </p>
               {!showDeleteConfirm ? (
                 <button

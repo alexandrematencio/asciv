@@ -390,7 +390,7 @@ function AccountPageContent() {
   return (
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-primary-800 border-b border-primary-200 dark:border-primary-700 sticky top-0 z-10 transition-colors">
+      <header className="bg-white/80 dark:bg-primary-800/80 backdrop-blur-md border-b border-primary-200 dark:border-primary-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -401,7 +401,7 @@ function AccountPageContent() {
               >
                 <ArrowLeft className="w-5 h-5" aria-hidden="true" />
               </button>
-              <h1 className="text-2xl font-semibold text-primary-900 dark:text-primary-50">Account</h1>
+              <h1 className="text-3xl font-bold text-primary-900 dark:text-primary-50">Account</h1>
             </div>
 
             {/* Save Status and Theme Toggle */}

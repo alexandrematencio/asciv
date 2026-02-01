@@ -26,7 +26,7 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <ProfileProvider>

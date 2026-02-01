@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -15,8 +14,7 @@ import {
   CheckCircle,
   Twitter,
   Linkedin,
-  Github,
-  X
+  Github
 } from 'lucide-react';
 
 // Text reveal on scroll
@@ -63,7 +61,7 @@ function AnimatedStat({
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [count, setCount] = useState(0);
-  const duration = 2000;
+  const duration = 2000; // 2 seconds
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -141,68 +139,19 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-// Main landing content
-function LandingContent() {
-  const searchParams = useSearchParams();
-  const [scrollY, setScrollY] = useState(0);
+export default function LandingV3() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showDeletedMessage, setShowDeletedMessage] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('deleted') === 'true') {
-      setShowDeletedMessage(true);
-      setTimeout(() => setShowDeletedMessage(false), 10000);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
-      {/* Account Deleted Message */}
-      {showDeletedMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-primary-900 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-4 max-w-md">
-          <div className="flex-1">
-            <p className="font-medium">Account deleted</p>
-            <p className="text-sm text-white/70">Your account and all data have been permanently removed.</p>
-          </div>
-          <button
-            onClick={() => setShowDeletedMessage(false)}
-            className="p-1 hover:bg-white/10 rounded transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      {/* Subtle gradient orbs with parallax */}
-      <div
-        className="fixed top-1/4 -left-48 w-[600px] h-[600px] rounded-full blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(30,0,255,0.08) 0%, transparent 70%)',
-          transform: `translateY(${scrollY * 0.08}px)`,
-        }}
-      />
-      <div
-        className="fixed top-1/2 -right-48 w-[500px] h-[500px] rounded-full blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(255,72,0,0.06) 0%, transparent 70%)',
-          transform: `translateY(${-scrollY * 0.06}px)`,
-        }}
-      />
-
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-primary-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/landing" className="flex items-center gap-3">
+          <Link href="/landing-v3" className="flex items-center gap-3">
             <Image src="/logo.svg" alt="Asciv" width={40} height={20} className="h-5 w-auto" />
             <span className="text-xl font-semibold text-primary-900">Asciv</span>
           </Link>
@@ -221,14 +170,13 @@ function LandingContent() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-24 px-6 min-h-screen flex items-center relative">
+      <section className="pt-32 pb-24 px-6 min-h-screen flex items-center">
         <div className="max-w-5xl mx-auto">
           <div className="text-center">
-            {/* Glass badge */}
             <div
-              className={`inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-primary-200/50 text-primary-700 rounded-full text-sm font-medium mb-12 shadow-sm transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 bg-accent-50 text-accent-600 rounded-full text-sm font-medium mb-12 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             >
-              <Sparkles className="w-4 h-4 text-accent-500" />
+              <Sparkles className="w-4 h-4" />
               AI-powered matching
             </div>
 
@@ -237,9 +185,7 @@ function LandingContent() {
             >
               Know if a job fits
               <br />
-              <span className="text-accent-500">
-                before you apply.
-              </span>
+              <span className="text-accent-600">before you apply.</span>
             </h1>
 
             <p
@@ -253,10 +199,9 @@ function LandingContent() {
             <div
               className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             >
-              {/* Primary CTA - Orange */}
               <Link
                 href="/signup"
-                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-secondary-500 text-white rounded-xl transition-all hover:bg-secondary-600 hover:scale-[1.02] shadow-lg shadow-secondary-500/25"
+                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-primary-900 text-white rounded-xl transition-all hover:bg-primary-800 hover:scale-[1.02]"
               >
                 Get started free
                 <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
@@ -272,13 +217,28 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-32 px-6 bg-primary-50 relative">
+      {/* Stats Section - Animated Counters */}
+      <section className="py-32 px-6 bg-primary-50">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-12 text-center">
-            <AnimatedStat value={92} suffix="%" label="Skills accurately matched" delay={0} />
-            <AnimatedStat value={3} suffix="min" label="To analyze any job" delay={150} />
-            <AnimatedStat value={10} suffix="x" label="Faster applications" delay={300} />
+            <AnimatedStat
+              value={92}
+              suffix="%"
+              label="Skills accurately matched"
+              delay={0}
+            />
+            <AnimatedStat
+              value={3}
+              suffix="min"
+              label="To analyze any job"
+              delay={150}
+            />
+            <AnimatedStat
+              value={10}
+              suffix="x"
+              label="Faster applications"
+              delay={300}
+            />
           </div>
           <p className="text-center text-primary-400 text-sm mt-8">
             Based on skills comparison between user profiles and job requirements
@@ -287,11 +247,11 @@ function LandingContent() {
       </section>
 
       {/* Feature Spotlight 1 */}
-      <section className="py-32 px-6 relative">
+      <section className="py-32 px-6">
         <div className="max-w-4xl mx-auto">
           <RevealText>
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center shadow-sm">
+              <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center">
                 <Target className="w-6 h-6 text-accent-600" />
               </div>
               <span className="text-sm font-medium text-accent-600 uppercase tracking-wide">Core Feature</span>
@@ -371,7 +331,7 @@ function LandingContent() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-32 px-6 relative">
+      <section className="py-32 px-6">
         <div className="max-w-5xl mx-auto">
           <RevealText>
             <h2 className="text-4xl lg:text-5xl font-bold text-primary-900 text-center mb-16">
@@ -387,8 +347,8 @@ function LandingContent() {
               { icon: Briefcase, title: 'Role Profiles', desc: 'Create distinct professional identities for different job types.' },
             ].map((feature, i) => (
               <RevealText key={i} delay={i * 100}>
-                <div className="flex gap-5 p-4 -m-4 rounded-2xl transition-all duration-300 hover:bg-white/60 hover:backdrop-blur-sm hover:shadow-lg hover:shadow-primary-200/50">
-                  <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div className="flex gap-5">
+                  <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
                     <feature.icon className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
@@ -433,20 +393,13 @@ function LandingContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 px-6 relative">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full blur-3xl pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse, rgba(30,0,255,0.05) 0%, transparent 60%)',
-          }}
-        />
-
-        <div className="max-w-3xl mx-auto text-center relative">
+      <section className="py-32 px-6">
+        <div className="max-w-3xl mx-auto text-center">
           <RevealText>
             <h2 className="text-5xl lg:text-6xl font-bold text-primary-900 mb-8">
               Stop guessing.
               <br />
-              <span className="text-accent-500">Start matching.</span>
+              <span className="text-accent-600">Start matching.</span>
             </h2>
           </RevealText>
 
@@ -460,14 +413,14 @@ function LandingContent() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/signup"
-                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-secondary-500 text-white rounded-xl transition-all hover:bg-secondary-600 hover:scale-[1.02] shadow-lg shadow-secondary-500/25"
+                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold bg-primary-900 text-white rounded-xl transition-all hover:bg-primary-800 hover:scale-[1.02]"
               >
                 Create free account
                 <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center px-10 py-5 text-lg font-medium text-primary-700 border border-primary-200 hover:border-primary-300 hover:bg-primary-50 rounded-xl transition-all"
+                className="inline-flex items-center justify-center px-10 py-5 text-lg font-medium text-primary-900 border border-primary-200 hover:border-primary-300 hover:bg-primary-50 rounded-xl transition-all"
               >
                 I already have an account
               </Link>
@@ -476,13 +429,14 @@ function LandingContent() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Professional Footer */}
       <footer className="bg-primary-50 border-t border-primary-100">
         <div className="max-w-6xl mx-auto px-6 py-16">
+          {/* Footer Grid */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            {/* Brand */}
+            {/* Brand Column */}
             <div className="col-span-2 md:col-span-1">
-              <Link href="/landing" className="flex items-center gap-2 mb-4">
+              <Link href="/landing-v3" className="flex items-center gap-2 mb-4">
                 <Image src="/logo.svg" alt="Asciv" width={32} height={16} className="h-4 w-auto" />
                 <span className="text-lg font-semibold text-primary-900">Asciv</span>
               </Link>
@@ -497,6 +451,8 @@ function LandingContent() {
               <ul className="space-y-3 text-sm">
                 <li><FooterLink href="#features">Features</FooterLink></li>
                 <li><FooterLink href="/signup">Get Started</FooterLink></li>
+                <li><FooterLink href="#">Pricing</FooterLink></li>
+                <li><FooterLink href="#">Changelog</FooterLink></li>
               </ul>
             </div>
 
@@ -532,11 +488,13 @@ function LandingContent() {
             </div>
           </div>
 
-          {/* Bottom */}
+          {/* Bottom Bar */}
           <div className="pt-8 border-t border-primary-200 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-primary-400 text-sm">
               © 2026 Asciv. All rights reserved.
             </p>
+
+            {/* Social Links */}
             <div className="flex items-center gap-4">
               <Link
                 href="#"
@@ -564,13 +522,5 @@ function LandingContent() {
         </div>
       </footer>
     </div>
-  );
-}
-
-export default function LandingPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <LandingContent />
-    </Suspense>
   );
 }

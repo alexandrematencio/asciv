@@ -5,7 +5,7 @@
 version: "2.0"
 project: resume-builder
 architecture: "agentic-v2"
-last_updated: 2026-01-22
+last_updated: 2026-02-01
 ---
 
 # CLAUDE.md
@@ -215,6 +215,15 @@ Lire OBLIGATOIREMENT avant toute tâche :
 5. Raffiné
 6. Premium
 7. Bienveillant
+
+### Palette couleurs (du logo)
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `primary` | #0F172A → #64748B | Slate — textes, éléments structurels |
+| `accent` | #1E00FF | Bleu électrique — liens, éléments interactifs |
+| `secondary` | #FF4800 | Orange vif — **CTAs majeurs uniquement** (max 1-2/écran) |
+
+L'orange doit rester RARE pour garder son impact.
 
 ### Security (non-négociables)
 - GDPR compliance

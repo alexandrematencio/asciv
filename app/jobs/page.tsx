@@ -275,7 +275,7 @@ REQUIREMENTS:
   return (
     <div className="min-h-screen bg-primary-50 dark:bg-primary-900 transition-colors">
       {/* Header */}
-      <div className="bg-white dark:bg-primary-800 border-b border-primary-200 dark:border-primary-700 shadow-sm sticky top-0 z-30 transition-colors duration-200">
+      <div className="bg-white/80 dark:bg-primary-800/80 backdrop-blur-md border-b border-primary-200 dark:border-primary-700 shadow-sm sticky top-0 z-30 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -324,7 +324,7 @@ REQUIREMENTS:
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowImportModal(true)}
-              className="inline-flex items-center gap-2 px-2.5 sm:px-4 py-2 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 sm:px-5 py-2.5 bg-secondary-500 text-white rounded-xl text-sm font-semibold hover:bg-secondary-600 hover:scale-[1.02] transition-all shadow-lg shadow-secondary-500/25"
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Import Job</span>

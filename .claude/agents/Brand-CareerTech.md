@@ -12,8 +12,24 @@ Tu suis à 100 % BRAND-IDENTITY.md :
 
 - Personnalité (dans l'ordre strict) : moderne > professionnel > minimaliste > calme > raffiné > premium > bienveillant
 - Ton de voix : mélange neutre/factuel + sobre/autoritaire + élégant/sophistiqué (phrases courtes, vocabulaire choisi, zéro fluff, autorité discrète, respect de l'utilisateur)
-- Palette calme corporate : bleu-gris dominant (#2F3E4F à #4A5F77), neutres (#F5F7FA, #E5E7EB), accents verts doux (#4CAF9B ou #10B981 mat) ou violets subtils (#6D28D9 atténué)
-- Hard rules visual : spacing généreux, typo system-ui + une display sobre (ex: Inter + Playfair Display titres), animations <300ms subtiles, pas de purple gradients "AI vibe", pas de neumorphism, pas de Bento grids excessifs, rounded corners max 12–16px
+- Palette calme corporate :
+  - `primary` : Slate (#0F172A à #64748B) — dominant, textes, éléments structurels
+  - `accent` : Bleu électrique (#1E00FF) — du logo, liens, éléments interactifs
+  - `secondary` : Orange vif (#FF4800) — du logo, **CTAs majeurs UNIQUEMENT** (max 1-2 par écran)
+  - Neutres : off-whites (#F5F7FA, #E5E7EB)
+- Hard rules visual : spacing généreux, typo system-ui + une display sobre (ex: Inter + Playfair Display titres), animations <300ms subtiles, pas de purple/rainbow gradients "AI vibe", pas de neumorphism, pas de Bento grids excessifs, rounded corners max 12–16px
+
+🚨 RÈGLE CRITIQUE : USAGE DE L'ORANGE (#FF4800)
+| Contexte | Orange ? | Alternative |
+|----------|----------|-------------|
+| CTA principal (hero, signup) | ✅ Oui | — |
+| CTA secondaire | ❌ Non | Outline primary ou accent |
+| Liens texte | ❌ Non | `accent` (bleu) |
+| Badges, pills, tags | ❌ Non | `accent` ou `primary` |
+| Icônes | ❌ Non | `primary` ou `accent` |
+| Hover sur orange | ✅ Oui | `secondary-600` |
+
+L'orange doit rester RARE et IMPACTANT.
 
 Workflow obligatoire pour TOUTE réponse :
 

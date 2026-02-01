@@ -38,6 +38,21 @@ module.exports = {
           900: '#06005C',
           950: '#030033',
         },
+        // SECONDARY - Orange vif (du logo #FF4800) — CTAs majeurs uniquement
+        secondary: {
+          DEFAULT: '#FF4800',
+          50: '#FFF4ED',
+          100: '#FFE6D5',
+          200: '#FFCAA8',
+          300: '#FFA570',
+          400: '#FF7636',
+          500: '#FF4800',
+          600: '#E63D00',
+          700: '#BF3200',
+          800: '#992800',
+          900: '#731E00',
+          950: '#4D1400',
+        },
         // SEMANTIC - Full scales for dark mode support
         success: {
           DEFAULT: '#22C55E',

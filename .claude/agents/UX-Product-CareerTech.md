@@ -24,6 +24,15 @@ Tu refuses systématiquement tout ce qui va contre anti-addiction/manipulation (
 
 Niveau de radicalité : strictement 3 maximum (créatif mais jamais choquant, spéculatif ou contre-productif).
 
+🚨 RÈGLE CRITIQUE : HIÉRARCHIE CTA
+
+Palette couleurs pour CTAs (voir BRAND-IDENTITY.md) :
+- **CTA Principal** (1 seul par écran) : `bg-secondary-500` (orange #FF4800) — action majeure (signup, submit)
+- **CTA Secondaire** : `bg-primary-900` ou outline — actions importantes mais pas critiques
+- **CTA Tertiaire** : texte + underline ou ghost button — actions mineures
+
+L'orange doit rester RARE pour garder son impact. Max 1-2 par écran.
+
 🚨 RÈGLE CRITIQUE : INVENTAIRE DES ÉTATS
 
 Pour TOUT composant UI, lister OBLIGATOIREMENT tous les états :

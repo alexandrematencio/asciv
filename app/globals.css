@@ -162,6 +162,46 @@
     @apply input-base;
   }
 
+  /* === CV EDITOR REFINED INPUTS === */
+  .input-refined {
+    @apply w-full px-4 py-3;
+    @apply bg-white dark:bg-primary-900;
+    @apply border border-primary-200 dark:border-primary-600;
+    @apply rounded-xl;
+    @apply text-primary-900 dark:text-primary-100;
+    @apply placeholder:text-primary-400 dark:placeholder:text-primary-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500;
+    @apply transition-all duration-200;
+  }
+
+  .textarea-refined {
+    @apply input-refined resize-none;
+  }
+
+  /* === CV EDITOR CARDS === */
+  .section-card-cv {
+    @apply bg-white dark:bg-primary-800;
+    @apply rounded-2xl p-5 sm:p-7;
+    @apply border border-primary-100 dark:border-primary-700;
+    @apply shadow-sm;
+  }
+
+  .item-card-cv {
+    @apply bg-primary-50/50 dark:bg-primary-900/30;
+    @apply rounded-xl p-4 sm:p-5;
+    @apply border border-primary-100 dark:border-primary-700/50;
+    @apply relative;
+    @apply transition-colors duration-200;
+    @apply hover:border-primary-200 dark:hover:border-primary-600;
+  }
+
+  .section-header-cv {
+    @apply text-lg sm:text-xl font-semibold;
+    @apply text-primary-900 dark:text-primary-50;
+    @apply flex items-center gap-3;
+    @apply mb-6;
+  }
+
   /* === BADGES === */
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
@@ -239,6 +279,18 @@
     @apply focus:ring-success-500;
   }
 
+  /* === CTA BUTTON (Orange - max 1-2 per screen) === */
+  .btn-cta {
+    @apply inline-flex items-center justify-center;
+    @apply px-8 py-4 text-lg font-semibold;
+    @apply bg-secondary-500 hover:bg-secondary-600 active:bg-secondary-700;
+    @apply text-white rounded-xl;
+    @apply hover:scale-[1.02] transition-all duration-200;
+    @apply shadow-lg;
+    @apply focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+  }
+
   .btn-sm {
     @apply px-4 py-2 text-sm;
   }
@@ -287,6 +339,28 @@
     @apply bg-white dark:bg-primary-800;
     @apply rounded-lg shadow-xl;
     @apply border border-primary-200 dark:border-primary-700;
+  }
+
+  /* === GLASS EFFECTS (Landing V4 patterns) === */
+  .glass {
+    @apply bg-white/60 dark:bg-primary-900/60 backdrop-blur-sm;
+  }
+
+  .glass-heavy {
+    @apply bg-white/80 dark:bg-primary-800/80 backdrop-blur-lg;
+  }
+
+  .glass-card {
+    @apply bg-white/80 dark:bg-primary-800/80 backdrop-blur-sm;
+    @apply border border-primary-200/50 dark:border-primary-700/50;
+    @apply rounded-xl;
+  }
+
+  .badge-glass {
+    @apply inline-flex items-center gap-2 px-4 py-2;
+    @apply bg-white/60 backdrop-blur-sm;
+    @apply border border-primary-200/50;
+    @apply rounded-full text-sm font-medium shadow-sm;
   }
 
   /* === STAT CARD === */

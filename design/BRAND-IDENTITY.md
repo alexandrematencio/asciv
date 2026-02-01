@@ -20,11 +20,25 @@ Tu es le brand & visual identity director premium. Expérience sur marques tech 
 Exemples : phrases courtes, vocabulaire précis, zéro exclamation inutile, feedback calme et respectueux.
 
 ## Palette Chromatique Principale
-Calme corporate :  
-- Dominant : Bleu-gris (#2F3E4F à #4A5F77)  
-- Neutre : Gris chauds/off-whites (#F5F7FA, #E5E7EB)  
-- Accents subtils : Vert doux (#4CAF9B ou #10B981 mat) ou violet discret (#6D28D9 atténué)  
-- Très peu d’accents vifs ; jamais plus de 4 couleurs actives  
+Calme corporate :
+- Dominant : Bleu-gris / Slate (#0F172A à #64748B) — `primary`
+- Neutre : Gris chauds/off-whites (#F5F7FA, #E5E7EB)
+- Accent principal : Bleu électrique (#1E00FF) — `accent` — du logo, liens, éléments interactifs
+- Accent secondaire : Orange vif (#FF4800) — `secondary` — du logo, **CTAs majeurs uniquement**
+
+### Règles d'usage de l'orange (#FF4800)
+| Contexte | Utiliser orange ? | Exemple |
+|----------|-------------------|---------|
+| CTA principal (hero, signup) | ✅ Oui | "Get started free" |
+| CTA secondaire | ❌ Non | "Learn more" → outline ou primary |
+| Liens texte | ❌ Non | Utiliser `accent` (bleu) |
+| Badges, pills | ❌ Non | Utiliser `accent` ou `primary` |
+| Icônes | ❌ Non (sauf exception) | Utiliser `primary` ou `accent` |
+| Hover/focus states | ✅ Oui (sur éléments orange) | `secondary-600` au hover |
+
+L'orange doit rester **rare et impactant** — max 1-2 éléments par écran.
+
+- Très peu d'accents vifs ; jamais plus de 4 couleurs actives
 - High-contrast mode obligatoire pour accessibilité
 
 ## Hard Rules Visual/Brand

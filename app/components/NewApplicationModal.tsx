@@ -90,7 +90,7 @@ export default function NewApplicationModal({
   const [step, setStep] = useState(1);
 
   // Step 1: Job Info
-  const [jobInputMode, setJobInputMode] = useState<'manual' | 'import'>('manual');
+  const [jobInputMode, setJobInputMode] = useState<'manual' | 'import' | 'url'>('manual');
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [jobLocation, setJobLocation] = useState('');
@@ -203,86 +203,92 @@ export default function NewApplicationModal({
     }
   }, [isOpen, profile]);
 
-  // Full pre-fill form from profile when source is 'profile'
+  // Full pre-fill form from profile when source is 'profile' or 'scratch'
+  // For 'profile' mode: requires profileComplete (strict mode)
+  // For 'scratch' mode: pre-fills with available data (user can edit freely)
   useEffect(() => {
-    if (cvSource === 'profile' && profile && profileComplete) {
-      // Find selected role profile or use general profile
-      const roleProfile = selectedRoleProfileId
-        ? roleProfiles.find(rp => rp.id === selectedRoleProfileId)
-        : null;
+    const shouldPrefill =
+      (cvSource === 'profile' && profile && profileComplete) ||
+      (cvSource === 'scratch' && profile);
 
-      // Build name
-      setName(profile.fullName || '');
-      setEmail(profile.email || '');
-      setPhone(profile.phone || '');
-      setAddress([profile.city, profile.country].filter(Boolean).join(', '));
+    if (!shouldPrefill || !profile) return;
 
-      // Languages from profile
-      const langList = profile.languages?.map(l => `${l.language} (${l.proficiency})`).join(', ') || '';
-      setLanguages(langList);
+    // Find selected role profile or use general profile (only for 'profile' mode)
+    const roleProfile = cvSource === 'profile' && selectedRoleProfileId
+      ? roleProfiles.find(rp => rp.id === selectedRoleProfileId)
+      : null;
 
-      // Portfolio - first link
-      const portfolioLink = profile.portfolioLinks?.find(l => l.type === 'portfolio' || l.type === 'linkedin');
-      setPortfolio(portfolioLink?.url || '');
+    // Build name
+    setName(profile.fullName || '');
+    setEmail(profile.email || '');
+    setPhone(profile.phone || '');
+    setAddress([profile.city, profile.country].filter(Boolean).join(', '));
 
-      // Summary - use role profile custom summary if available
-      setSummary(roleProfile?.customSummary || profile.professionalSummary || '');
+    // Languages from profile
+    const langList = profile.languages?.map(l => `${l.language} (${l.proficiency})`).join(', ') || '';
+    setLanguages(langList);
 
-      // Experience - filter by role profile if selected
-      const experiencesToUse = roleProfile
-        ? profile.workExperience.filter(exp => roleProfile.selectedExperienceIds.includes(exp.id))
-        : profile.workExperience;
+    // Portfolio - first link
+    const portfolioLink = profile.portfolioLinks?.find(l => l.type === 'portfolio' || l.type === 'linkedin');
+    setPortfolio(portfolioLink?.url || '');
 
-      setExperienceEntries(experiencesToUse.map(exp => ({
-        id: exp.id,
-        title: exp.title,
-        company: exp.company,
-        location: exp.location || '',
-        startDate: exp.startDate,
-        endDate: exp.endDate || '',
-        current: exp.current,
-        achievements: exp.achievements.length > 0 ? exp.achievements : [''],
-      })));
+    // Summary - use role profile custom summary if available
+    setSummary(roleProfile?.customSummary || profile.professionalSummary || '');
 
-      // Skills - filter by role profile if selected
-      const skillsToUse = roleProfile
-        ? profile.skills.filter(s => roleProfile.selectedSkillIds.includes(s.id))
-        : profile.skills;
+    // Experience - filter by role profile if selected (profile mode only)
+    const experiencesToUse = roleProfile
+      ? profile.workExperience.filter(exp => roleProfile.selectedExperienceIds.includes(exp.id))
+      : profile.workExperience || [];
 
-      setSkillTags(skillsToUse.map(s => s.name));
+    setExperienceEntries(experiencesToUse.map(exp => ({
+      id: exp.id,
+      title: exp.title,
+      company: exp.company,
+      location: exp.location || '',
+      startDate: exp.startDate,
+      endDate: exp.endDate || '',
+      current: exp.current,
+      achievements: exp.achievements.length > 0 ? exp.achievements : [''],
+    })));
 
-      // Education - filter by role profile if selected
-      const educationToUse = roleProfile
-        ? profile.education.filter(e => roleProfile.selectedEducationIds.includes(e.id))
-        : profile.education;
+    // Skills - filter by role profile if selected (profile mode only)
+    const skillsToUse = roleProfile
+      ? profile.skills.filter(s => roleProfile.selectedSkillIds.includes(s.id))
+      : profile.skills || [];
 
-      setEducationEntries(educationToUse.map(edu => ({
-        id: edu.id,
-        degree: edu.degree,
-        institution: edu.institution,
-        field: edu.field,
-        startYear: edu.startYear?.toString() || '',
-        endYear: edu.endYear?.toString() || '',
-        current: edu.current || false,
-      })));
+    setSkillTags(skillsToUse.map(s => s.name));
 
-      // Projects from certifications/awards
-      const projectsText = [
-        ...(profile.certifications?.map(c => `${c.name} - ${c.issuer} (${c.date})`) || []),
-        ...(profile.awards?.map(a => `${a.title} - ${a.issuer} (${a.date})`) || []),
-      ].join('\n');
-      setProjects(projectsText);
+    // Education - filter by role profile if selected (profile mode only)
+    const educationToUse = roleProfile
+      ? profile.education.filter(e => roleProfile.selectedEducationIds.includes(e.id))
+      : profile.education || [];
 
-      // Save snapshot for role profile change detection
-      if (selectedRoleProfileId) {
-        const summaryVal = roleProfile?.customSummary || profile.professionalSummary || '';
-        const expIds = experiencesToUse.map(e => e.id).sort().join(',');
-        const skillNames = skillsToUse.map(s => s.name).sort().join(',');
-        const eduIds = educationToUse.map(e => e.id).sort().join(',');
-        setProfileSnapshot(JSON.stringify({ summary: summaryVal, expIds, skillNames, eduIds }));
-      } else {
-        setProfileSnapshot(null);
-      }
+    setEducationEntries(educationToUse.map(edu => ({
+      id: edu.id,
+      degree: edu.degree,
+      institution: edu.institution,
+      field: edu.field,
+      startYear: edu.startYear?.toString() || '',
+      endYear: edu.endYear?.toString() || '',
+      current: edu.current || false,
+    })));
+
+    // Projects from certifications/awards
+    const projectsText = [
+      ...(profile.certifications?.map(c => `${c.name} - ${c.issuer} (${c.date})`) || []),
+      ...(profile.awards?.map(a => `${a.title} - ${a.issuer} (${a.date})`) || []),
+    ].join('\n');
+    setProjects(projectsText);
+
+    // Save snapshot for role profile change detection (only in profile mode)
+    if (cvSource === 'profile' && selectedRoleProfileId) {
+      const summaryVal = roleProfile?.customSummary || profile.professionalSummary || '';
+      const expIds = experiencesToUse.map(e => e.id).sort().join(',');
+      const skillNames = skillsToUse.map(s => s.name).sort().join(',');
+      const eduIds = educationToUse.map(e => e.id).sort().join(',');
+      setProfileSnapshot(JSON.stringify({ summary: summaryVal, expIds, skillNames, eduIds }));
+    } else {
+      setProfileSnapshot(null);
     }
   }, [cvSource, profile, profileComplete, selectedRoleProfileId, roleProfiles]);
 
@@ -293,8 +299,8 @@ export default function NewApplicationModal({
     try {
       let textToParse = jobInputMode === 'import' ? importText : jobDescription;
 
-      // If URL mode (manual tab only), fetch content first
-      if (jobInputMode === 'manual' && useUrl && jobUrl.trim()) {
+      // If URL mode (dedicated tab or manual with useUrl toggle), fetch content first
+      if ((jobInputMode === 'url' || (jobInputMode === 'manual' && useUrl)) && jobUrl.trim()) {
         const fetchRes = await fetch('/api/fetch-job-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -371,6 +377,10 @@ export default function NewApplicationModal({
       // In import mode, set jobDescription to the full pasted text for CV generation
       if (jobInputMode === 'import' && importText.trim()) {
         setJobDescription(importText.trim());
+      }
+      // In URL mode, set jobDescription to the fetched content for CV generation
+      if (jobInputMode === 'url' && textToParse.trim()) {
+        setJobDescription(textToParse.trim());
       }
     } catch (error) {
       console.error('Error parsing job:', error);
@@ -950,30 +960,27 @@ export default function NewApplicationModal({
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
+      {/* Centered Modal */}
       <div
-        className="modal-backdrop z-40"
-        onClick={handleClose}
-      />
-
-      {/* Slide Panel */}
-      <div className="fixed inset-y-0 right-0 w-full md:w-[700px] bg-white dark:bg-primary-800 shadow-2xl z-50 overflow-y-auto animate-slide-in-right transition-colors">
+        className="bg-white dark:bg-primary-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-accent-600 text-white p-6 shadow-lg z-10">
-          <div className="flex items-center justify-between mb-3">
+        <div className="flex-shrink-0 bg-secondary-500 text-white px-6 py-5">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <FilePlus className="w-6 h-6" aria-hidden="true" />
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <FilePlus className="w-5 h-5" aria-hidden="true" />
                 New Application
               </h2>
-              <p className="text-white/90 mt-1 text-sm">
+              <p className="text-white/80 mt-0.5 text-sm">
                 Step {prefilledJob ? step - 1 : step} of {prefilledJob ? (cvSource === 'template' && hasTemplates ? 1 : 2) : (cvSource === 'template' && hasTemplates ? 2 : 3)}
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="text-white hover:text-white/80 w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+              className="text-white hover:text-white/80 w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" aria-hidden="true" />
@@ -981,16 +988,16 @@ export default function NewApplicationModal({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-accent-400/30 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-1.5 mt-4">
             <div
-              className="bg-white h-2 rounded-full transition-all duration-300"
+              className="bg-white h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${((prefilledJob ? step - 1 : step) / (prefilledJob ? (cvSource === 'template' && hasTemplates ? 1 : 2) : (cvSource === 'template' && hasTemplates ? 2 : 3))) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {/* STEP 1: Job Information */}
           {step === 1 && (
             <div className="space-y-6">
@@ -1005,7 +1012,7 @@ export default function NewApplicationModal({
               <div className="flex p-1 bg-primary-100 dark:bg-primary-700/50 rounded-lg">
                 <button
                   onClick={() => setJobInputMode('manual')}
-                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
                     jobInputMode === 'manual'
                       ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-50 shadow-sm'
                       : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
@@ -1015,13 +1022,24 @@ export default function NewApplicationModal({
                 </button>
                 <button
                   onClick={() => setJobInputMode('import')}
-                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
                     jobInputMode === 'import'
                       ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-50 shadow-sm'
                       : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
                   }`}
                 >
-                  Import text format
+                  Paste text
+                </button>
+                <button
+                  onClick={() => setJobInputMode('url')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                    jobInputMode === 'url'
+                      ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-50 shadow-sm'
+                      : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
+                  }`}
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  Import URL
                 </button>
               </div>
 
@@ -1348,6 +1366,84 @@ Requirements:
                   )}
                 </div>
               )}
+
+              {/* URL MODE */}
+              {jobInputMode === 'url' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-primary-600 dark:text-primary-400">
+                    Enter the job posting URL. We'll fetch and parse the content automatically.
+                  </p>
+
+                  {/* Warning about job boards */}
+                  <div className="flex items-start gap-3 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-700/50 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-warning-500 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-warning-700 dark:text-warning-300">
+                      <p className="font-medium mb-1">Some job boards may not work</p>
+                      <p className="text-warning-600 dark:text-warning-400">
+                        LinkedIn, Indeed, and some other platforms restrict automated access to their job postings.
+                        If this fails, use the <strong>Paste text</strong> option and copy-paste the job description manually.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-primary-700 dark:text-primary-300 mb-2">
+                      Job Posting URL
+                    </label>
+                    <input
+                      type="url"
+                      value={jobUrl}
+                      onChange={(e) => setJobUrl(e.target.value)}
+                      placeholder="https://careers.company.com/jobs/..."
+                      className="input-primary"
+                      autoFocus
+                    />
+                    <p className="mt-1.5 text-xs text-primary-500 dark:text-primary-400">
+                      Works best with company career pages. May not work with LinkedIn, Indeed, or Glassdoor.
+                    </p>
+                  </div>
+
+                  {/* Parse error */}
+                  {parseError && (
+                    <div className="flex items-center gap-2 text-sm text-error-600 dark:text-error-400">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{parseError}</span>
+                    </div>
+                  )}
+
+                  {/* Parsed preview + extracted fields */}
+                  {parsedJobContext && (
+                    <div className="p-4 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 rounded-lg space-y-3">
+                      <p className="text-xs font-medium text-success-700 dark:text-success-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Extracted information (editable)
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-primary-600 dark:text-primary-400 mb-1">Company</label>
+                          <input
+                            type="text"
+                            value={company}
+                            onChange={(e) => setCompany(e.target.value)}
+                            placeholder="Company name"
+                            className="input-primary text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-primary-600 dark:text-primary-400 mb-1">Job Title</label>
+                          <input
+                            type="text"
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
+                            placeholder="Job title"
+                            className="input-primary text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1589,52 +1685,52 @@ Requirements:
 
           {/* STEP 3: CV Data (From Scratch) */}
           {step === 3 && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
-                <h3 className="text-xl font-semibold text-primary-900 dark:text-primary-50 mb-4 flex items-center gap-2">
+                <h3 className="section-header-cv">
                   <User className="w-5 h-5 text-accent-500" aria-hidden="true" />
                   Your Information
                 </h3>
-                <p className="text-primary-600 dark:text-primary-400 text-sm mb-6">
+                <p className="text-primary-500 dark:text-primary-400 text-sm -mt-4">
                   Fill in your details or import from an existing CV
                 </p>
               </div>
 
               {/* Input Mode Selector */}
               {cvImportStatus !== 'done' && (
-                <div className="flex gap-2 p-1 bg-primary-100 dark:bg-primary-700/50 rounded-lg">
+                <div className="flex gap-2 p-1.5 bg-primary-100 dark:bg-primary-700/50 rounded-xl">
                   <button
                     onClick={() => setCvInputMode('pdf')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                       cvInputMode === 'pdf'
                         ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-100 shadow-sm'
-                        : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
+                        : 'text-primary-500 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
                     }`}
                   >
                     <FileText className="w-4 h-4" />
-                    PDF
+                    <span className="hidden sm:inline">PDF</span>
                   </button>
                   <button
                     onClick={() => setCvInputMode('text')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                       cvInputMode === 'text'
                         ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-100 shadow-sm'
-                        : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
+                        : 'text-primary-500 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
                     }`}
                   >
                     <ClipboardList className="w-4 h-4" />
-                    Paste Text
+                    <span className="hidden sm:inline">Paste</span>
                   </button>
                   <button
                     onClick={() => setCvInputMode('manual')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                       cvInputMode === 'manual'
                         ? 'bg-white dark:bg-primary-800 text-primary-900 dark:text-primary-100 shadow-sm'
-                        : 'text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
+                        : 'text-primary-500 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-200'
                     }`}
                   >
                     <Pencil className="w-4 h-4" />
-                    Manual
+                    <span className="hidden sm:inline">Manual</span>
                   </button>
                 </div>
               )}
@@ -1643,19 +1739,19 @@ Requirements:
               {cvInputMode === 'pdf' && cvImportStatus !== 'done' && (
                 <div
                   {...getRootProps()}
-                  className={`p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                  className={`p-8 sm:p-10 border border-dashed rounded-xl cursor-pointer transition-all ${
                     isDragActive
-                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-500/10'
-                      : 'border-primary-300 dark:border-primary-600 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-700/30'
+                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-500/10 scale-[1.01]'
+                      : 'border-primary-200 dark:border-primary-600 hover:border-accent-400 dark:hover:border-accent-500 hover:bg-primary-50 dark:hover:bg-primary-700/30'
                   }`}
                 >
                   <input {...getInputProps()} />
                   <div className="flex flex-col items-center text-center">
-                    <Upload className="w-10 h-10 text-primary-400 dark:text-primary-500 mb-3" />
+                    <Upload className="w-12 h-12 text-primary-300 dark:text-primary-500 mb-4" />
                     <span className="text-sm text-primary-700 dark:text-primary-300 font-medium">
-                      {isDragActive ? 'Drop your PDF here' : 'Drag & drop your CV, or click to browse'}
+                      {isDragActive ? 'Drop your PDF here' : 'Drag & drop your CV'}
                     </span>
-                    <span className="text-xs text-primary-500 dark:text-primary-400 mt-1">PDF files up to 8MB</span>
+                    <span className="text-xs text-primary-400 dark:text-primary-500 mt-2">or click to browse · PDF up to 8MB</span>
                   </div>
                 </div>
               )}
@@ -1668,12 +1764,12 @@ Requirements:
                     onChange={(e) => setCvTextContent(e.target.value)}
                     placeholder="Paste your full CV or resume content here..."
                     rows={10}
-                    className="textarea-primary text-sm"
+                    className="textarea-refined text-sm"
                     autoFocus
                   />
 
                   <div className="flex items-center justify-end">
-                    <span className="text-xs text-primary-500 dark:text-primary-400">
+                    <span className="text-xs text-primary-400 dark:text-primary-500">
                       {cvTextContent.length.toLocaleString()} characters
                     </span>
                   </div>
@@ -1704,31 +1800,31 @@ Requirements:
               {(cvInputMode === 'manual' || cvImportStatus === 'done') && (
               <>
               {/* Personal Info */}
-              <div className="bg-primary-50 dark:bg-primary-700/50 rounded-xl p-5 space-y-4">
-                <h4 className="font-medium text-primary-900 dark:text-primary-100">Personal Details</h4>
+              <div className="section-card-cv space-y-4">
+                <h4 className="font-semibold text-primary-900 dark:text-primary-100">Personal Details</h4>
 
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full Name *"
-                  className="input-primary"
+                  className="input-refined"
                 />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email *"
-                    className="input-primary"
+                    className="input-refined"
                   />
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Phone"
-                    className="input-primary"
+                    className="input-refined"
                   />
                 </div>
 
@@ -1737,10 +1833,10 @@ Requirements:
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Address / Location"
-                  className="input-primary"
+                  className="input-refined"
                 />
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <input
                     type="number"
                     value={age}
@@ -1748,14 +1844,14 @@ Requirements:
                     placeholder="Age"
                     min="18"
                     max="99"
-                    className="input-primary"
+                    className="input-refined"
                   />
                   <input
                     type="text"
                     value={languages}
                     onChange={(e) => setLanguages(e.target.value)}
                     placeholder="Languages"
-                    className="input-primary col-span-2"
+                    className="input-refined sm:col-span-2"
                   />
                 </div>
 
@@ -1764,16 +1860,17 @@ Requirements:
                   value={portfolio}
                   onChange={(e) => setPortfolio(e.target.value)}
                   placeholder="Portfolio / Website URL"
-                  className="input-primary"
+                  className="input-refined"
                 />
               </div>
 
               {/* Experience */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-primary-700 dark:text-primary-300">
-                    Experience *
-                  </label>
+              <div className="section-card-cv">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-primary-900 dark:text-primary-100 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-accent-500" />
+                    Experience
+                  </h4>
                   <button
                     type="button"
                     onClick={() => {
@@ -1790,7 +1887,7 @@ Requirements:
                       }]);
                       setEditingExpId(newId);
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/50 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-accent-50 dark:bg-accent-900/20 text-accent-600 dark:text-accent-400 hover:bg-accent-100 dark:hover:bg-accent-900/30 rounded-lg transition-all hover:scale-[1.02]"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add
@@ -1798,25 +1895,26 @@ Requirements:
                 </div>
 
                 {experienceEntries.length === 0 ? (
-                  <p className="text-sm text-primary-400 dark:text-primary-500 italic py-4 text-center border border-dashed border-primary-300 dark:border-primary-600 rounded-lg">
-                    No experience added yet. Import your CV or add entries manually.
-                  </p>
+                  <div className="text-center py-8 text-primary-400 dark:text-primary-500">
+                    <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No experience added yet</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {experienceEntries.map((entry) => (
                       <div
                         key={entry.id}
-                        className="border border-primary-200 dark:border-primary-600 rounded-lg p-4 bg-white dark:bg-primary-800"
+                        className="item-card-cv"
                       >
                         {editingExpId === entry.id ? (
                           <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <input
                                 type="text"
                                 value={entry.title}
                                 onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, title: e.target.value } : en))}
                                 placeholder="Job Title *"
-                                className="input-primary text-sm"
+                                className="input-refined text-sm"
                                 autoFocus
                               />
                               <input
@@ -1824,7 +1922,7 @@ Requirements:
                                 value={entry.company}
                                 onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, company: e.target.value } : en))}
                                 placeholder="Company *"
-                                className="input-primary text-sm"
+                                className="input-refined text-sm"
                               />
                             </div>
                             <input
@@ -1832,15 +1930,15 @@ Requirements:
                               value={entry.location}
                               onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, location: e.target.value } : en))}
                               placeholder="Location (optional)"
-                              className="input-primary text-sm"
+                              className="input-refined text-sm"
                             />
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <input
                                 type="text"
                                 value={entry.startDate}
                                 onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, startDate: e.target.value } : en))}
                                 placeholder="Start (e.g. 01-2020)"
-                                className="input-primary text-sm"
+                                className="input-refined text-sm"
                               />
                               {!entry.current && (
                                 <input
@@ -1848,24 +1946,24 @@ Requirements:
                                   value={entry.endDate}
                                   onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, endDate: e.target.value } : en))}
                                   placeholder="End (e.g. 06-2023)"
-                                  className="input-primary text-sm"
+                                  className="input-refined text-sm"
                                 />
                               )}
                             </div>
-                            <label className="flex items-center gap-2 text-sm text-primary-700 dark:text-primary-300">
+                            <label className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 py-1">
                               <input
                                 type="checkbox"
                                 checked={entry.current}
                                 onChange={(e) => setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, current: e.target.checked } : en))}
-                                className="rounded border-primary-300 dark:border-primary-600"
+                                className="rounded border-primary-300 dark:border-primary-600 text-accent-600"
                               />
                               Current position
                             </label>
                             <div>
-                              <span className="text-xs font-medium text-primary-600 dark:text-primary-400 mb-1 block">Achievements</span>
+                              <span className="text-xs font-medium text-primary-500 dark:text-primary-400 mb-2 block">Achievements</span>
                               {entry.achievements.map((ach, achIdx) => (
-                                <div key={achIdx} className="flex items-center gap-2 mb-1">
-                                  <span className="text-primary-400 text-xs">-</span>
+                                <div key={achIdx} className="flex items-center gap-2 mb-2">
+                                  <span className="text-primary-300 text-xs">•</span>
                                   <input
                                     type="text"
                                     value={ach}
@@ -1875,7 +1973,7 @@ Requirements:
                                       setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, achievements: newAchs } : en));
                                     }}
                                     placeholder="Achievement or responsibility"
-                                    className="input-primary text-sm flex-1"
+                                    className="input-refined text-sm flex-1"
                                   />
                                   {entry.achievements.length > 1 && (
                                     <button
@@ -1884,7 +1982,7 @@ Requirements:
                                         const newAchs = entry.achievements.filter((_, i) => i !== achIdx);
                                         setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, achievements: newAchs } : en));
                                       }}
-                                      className="text-primary-400 hover:text-error-500 transition-colors"
+                                      className="text-primary-400 hover:text-error-500 transition-colors p-1"
                                     >
                                       <X className="w-3.5 h-3.5" />
                                     </button>
@@ -1896,7 +1994,7 @@ Requirements:
                                 onClick={() => {
                                   setExperienceEntries(entries => entries.map(en => en.id === entry.id ? { ...en, achievements: [...en.achievements, ''] } : en));
                                 }}
-                                className="text-xs text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 mt-1"
+                                className="text-xs text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 mt-1 font-medium"
                               >
                                 + Add achievement
                               </button>
@@ -1905,7 +2003,7 @@ Requirements:
                               <button
                                 type="button"
                                 onClick={() => setEditingExpId(null)}
-                                className="px-3 py-1.5 text-sm font-medium text-accent-700 dark:text-accent-300 bg-accent-50 dark:bg-accent-900/30 hover:bg-accent-100 dark:hover:bg-accent-900/50 rounded-lg transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 rounded-lg transition-all hover:scale-[1.02]"
                               >
                                 Done
                               </button>
@@ -2241,22 +2339,26 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
           )}
 
           {step < (cvSource === 'template' && hasTemplates ? 2 : 3) ? (
-            step === 1 && jobInputMode === 'import' && !parsedJobContext ? (
+            step === 1 && (jobInputMode === 'import' || jobInputMode === 'url') && !parsedJobContext ? (
               <Button
                 onClick={handleParseJob}
-                disabled={!importText.trim() || isParsing}
+                disabled={
+                  (jobInputMode === 'import' && !importText.trim()) ||
+                  (jobInputMode === 'url' && !jobUrl.trim()) ||
+                  isParsing
+                }
                 size="lg"
                 className="flex-1"
               >
                 {isParsing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Extracting...
+                    {jobInputMode === 'url' ? 'Fetching...' : 'Extracting...'}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Extract with AI
+                    {jobInputMode === 'url' ? 'Fetch & Extract' : 'Extract with AI'}
                   </>
                 )}
               </Button>
@@ -2268,7 +2370,7 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
                     !company.trim() || !role.trim() ||
                     (jobInputMode === 'manual' && !useUrl && !jobDescription.trim()) ||
                     (jobInputMode === 'manual' && useUrl && !jobUrl.trim()) ||
-                    (jobInputMode === 'import' && !parsedJobContext)
+                    ((jobInputMode === 'import' || jobInputMode === 'url') && !parsedJobContext)
                   )
                 }
                 size="lg"
@@ -2317,7 +2419,7 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
 
         {/* Role Profile Update Confirmation Prompt */}
         {showRoleProfileSaveConfirm && (
-          <div className="fixed inset-y-0 right-0 w-full md:w-[700px] bg-white/95 dark:bg-primary-800/95 flex items-center justify-center z-[60] p-8">
+          <div className="absolute inset-0 bg-white/95 dark:bg-primary-800/95 flex items-center justify-center z-[60] p-8 rounded-xl">
             <div className="max-w-sm text-center space-y-4">
               <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-full flex items-center justify-center mx-auto">
                 <Briefcase className="w-6 h-6 text-accent-600 dark:text-accent-400" />
@@ -2357,7 +2459,7 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
 
         {/* Profile Save Confirmation Prompt */}
         {showProfileSaveConfirm && (
-          <div className="fixed inset-y-0 right-0 w-full md:w-[700px] bg-white/95 dark:bg-primary-800/95 flex items-center justify-center z-[60] p-8">
+          <div className="absolute inset-0 bg-white/95 dark:bg-primary-800/95 flex items-center justify-center z-[60] p-8 rounded-xl">
             <div className="max-w-sm text-center space-y-4">
               <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-full flex items-center justify-center mx-auto">
                 <User className="w-6 h-6 text-accent-600 dark:text-accent-400" />
@@ -2395,6 +2497,6 @@ e.g., Nike Campaign 2023 - Led creative direction, +300% engagement"
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
